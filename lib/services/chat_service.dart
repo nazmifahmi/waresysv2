@@ -7,7 +7,7 @@ import '../models/chat_message_model.dart';
 
 class ChatService {
   static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
-  static const String _apiKey = 'YOUR_GEMINI_API_KEY'; // Ganti dengan API key yang sebenarnya
+  static const String _apiKey = 'AIzaSyBkngZc1iPUUMtO83AGcwmALpg64TTkM6g'; // Gemini API key
   
   // Singleton pattern
   static final ChatService _instance = ChatService._internal();
