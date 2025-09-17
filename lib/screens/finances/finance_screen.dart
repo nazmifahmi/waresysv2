@@ -6,6 +6,7 @@ import 'finance_budgets_page.dart';
 import 'finance_reports_page.dart';
 import '../../constants/theme.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/floating_chat_bubble.dart';
 
 class FinanceScreen extends StatefulWidget {
   const FinanceScreen({super.key});
@@ -83,18 +84,23 @@ class _FinanceScreenState extends State<FinanceScreen> {
            ),
          ],
        ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.backgroundDark,
-              AppTheme.surfaceDark,
-            ],
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppTheme.backgroundDark,
+                  AppTheme.surfaceDark,
+                ],
+              ),
+            ),
+            child: _pages[_selectedIndex],
           ),
-        ),
-        child: _pages[_selectedIndex],
+          const FloatingChatBubble(),
+        ],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

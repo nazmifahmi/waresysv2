@@ -8,6 +8,7 @@ import 'transaction/transaction_screen.dart';
 import '../services/auth_service.dart';
 import '../widgets/news_section.dart';
 import '../providers/news_provider.dart';
+import '../widgets/floating_chat_bubble.dart';
 import '../constants/theme.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -77,35 +78,40 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundDark,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            await context.read<NewsProvider>().refreshNews();
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context),
-                const SizedBox(height: 24),
-                _buildWelcomeSection(context),
-                const SizedBox(height: 32),
-                RepaintBoundary(
-                  child: _buildCoreFeatures(context),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await context.read<NewsProvider>().refreshNews();
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(context),
+                    const SizedBox(height: 24),
+                    _buildWelcomeSection(context),
+                    const SizedBox(height: 32),
+                    RepaintBoundary(
+                      child: _buildCoreFeatures(context),
+                    ),
+                    const SizedBox(height: 40),
+                    RepaintBoundary(
+                      child: const NewsSection(
+                        title: 'Berita Digitalisasi UMKM',
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    _buildFooter(context),
+                  ],
                 ),
-                const SizedBox(height: 40),
-                RepaintBoundary(
-                  child: const NewsSection(
-                    title: 'Berita Digitalisasi UMKM',
-                  ),
-                ),
-                const SizedBox(height: 32),
-                _buildFooter(context),
-              ],
+              ),
             ),
           ),
-        ),
+        const FloatingChatBubble(),
+        ],
       ),
     );
   }

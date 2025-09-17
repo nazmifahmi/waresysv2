@@ -6,6 +6,7 @@ import 'firebase_options.dart';
 
 // Import Provider baru kita
 import 'package:waresys_fix1/providers/ai_provider.dart';
+import 'package:waresys_fix1/providers/chat_provider.dart';
 
 import 'package:waresys_fix1/providers/auth_provider.dart';
 import 'package:waresys_fix1/providers/transaction_provider.dart';
@@ -23,6 +24,7 @@ import 'package:waresys_fix1/screens/monitoring/monitor_notifications_page.dart'
 import 'package:waresys_fix1/screens/monitoring/monitor_activity_page.dart';
 import 'package:waresys_fix1/screens/finances/finance_screen.dart';
 import 'package:waresys_fix1/screens/inventory/inventory_screen.dart';
+import 'package:waresys_fix1/screens/chat/chat_screen.dart';
 import 'package:waresys_fix1/constants/theme.dart';
 import 'package:waresys_fix1/services/ai/ai_service_test.dart';
 import 'package:waresys_fix1/services/firestore_connection_service.dart';
@@ -56,6 +58,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => InventoryProvider()),
         // Daftarkan AIProvider kita di sini
         ChangeNotifierProvider(create: (_) => AIProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => NewsProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
@@ -92,6 +95,7 @@ class MyApp extends StatelessWidget {
             '/monitor/activity': (context) => const MonitorActivityPage(),
             '/finances': (context) => const FinanceScreen(),
             '/inventory': (context) => const InventoryScreen(),
+            '/chat': (context) => const ChatScreen(),
           },
         );
       },

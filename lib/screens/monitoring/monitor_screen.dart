@@ -13,6 +13,7 @@ import 'package:waresys_fix1/services/finance_service.dart';
 import 'package:waresys_fix1/services/monitoring_service.dart';
 import '../../constants/theme.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/floating_chat_bubble.dart';
 
 class MonitorScreen extends StatefulWidget {
   const MonitorScreen({super.key});
@@ -166,18 +167,23 @@ class _MonitorScreenState extends State<MonitorScreen> {
           ),
         ),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.backgroundDark,
-              AppTheme.surfaceDark,
-            ],
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppTheme.backgroundDark,
+                  AppTheme.surfaceDark,
+                ],
+              ),
+            ),
+            child: _pages[_selectedIndex],
           ),
-        ),
-        child: _pages[_selectedIndex],
+          const FloatingChatBubble(),
+        ],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

@@ -13,6 +13,7 @@ import '../../providers/inventory_provider.dart';
 import 'package:provider/provider.dart';
 import '../../constants/theme.dart';
 import '../../widgets/common_widgets.dart';
+import '../../widgets/floating_chat_bubble.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -90,18 +91,23 @@ class _InventoryScreenState extends State<InventoryScreen> {
           ),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.backgroundDark,
-              AppTheme.surfaceDark,
-            ],
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppTheme.backgroundDark,
+                  AppTheme.surfaceDark,
+                ],
+              ),
+            ),
+            child: _pages[_selectedIndex],
           ),
-        ),
-        child: _pages[_selectedIndex],
+          const FloatingChatBubble(),
+        ],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
