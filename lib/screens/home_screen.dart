@@ -5,6 +5,8 @@ import 'shared/profile_screen.dart';
 import 'finances/finance_screen.dart';
 import 'inventory/inventory_screen.dart';
 import 'transaction/transaction_screen.dart';
+import 'hrm/employee_list_page.dart';
+import 'crm/crm_home_page.dart';
 import '../services/auth_service.dart';
 import '../widgets/news_section.dart';
 import '../providers/news_provider.dart';
@@ -66,6 +68,20 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const TransactionScreen()),
+    );
+  }
+
+  void _navigateToHRM(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const EmployeeListPage()),
+    );
+  }
+
+  void _navigateToCRM(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CRMHomePage()),
     );
   }
 
@@ -245,6 +261,30 @@ class _HomeScreenState extends State<HomeScreen> {
                         subtitle: 'Pantau bisnis',
                         color: AppTheme.accentPurple,
                         onTap: () => _navigateToMonitoring(context),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppTheme.spacingM),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppTheme.buildFeatureCard(
+                        icon: Icons.people_alt,
+                        title: 'HRM',
+                        subtitle: 'Manajemen SDM',
+                        color: AppTheme.accentGreen,
+                        onTap: () => _navigateToHRM(context),
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.spacingM),
+                    Expanded(
+                      child: AppTheme.buildFeatureCard(
+                        icon: Icons.handshake,
+                        title: 'CRM',
+                        subtitle: 'Pelanggan & Leads',
+                        color: AppTheme.accentBlue,
+                        onTap: () => _navigateToCRM(context),
                       ),
                     ),
                   ],

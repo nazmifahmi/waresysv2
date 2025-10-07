@@ -6,8 +6,8 @@ import 'package:http/http.dart' as http;
 import '../models/chat_message_model.dart';
 
 class ChatService {
-  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
-  static const String _apiKey = 'AIzaSyBkngZc1iPUUMtO83AGcwmALpg64TTkM6g'; // Gemini API key
+  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1/models';
+  static const String _apiKey = 'AIzaSyCbUmbfANUx7rWGtRJAGtMosW6O6BfkKY0'; // Gemini API key
   
   // Singleton pattern
   static final ChatService _instance = ChatService._internal();
@@ -17,8 +17,35 @@ class ChatService {
   // Headers untuk API request
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
-    'x-goog-api-key': _apiKey,
   };
+
+  Uri _url(String method) => Uri.parse('$_baseUrl/$method?key=$_apiKey');
+
+  Future<http.Response> _postWithRetry({
+    required String method,
+    required Map<String, dynamic> body,
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    // First attempt
+    final first = await http
+        .post(_url(method), headers: _headers, body: jsonEncode(body))
+        .timeout(timeout);
+
+    if (first.statusCode != 400) return first;
+
+    // Minimal retry on 400: remove safetySettings and relax generationConfig
+    final Map<String, dynamic> minimal = Map<String, dynamic>.from(body);
+    minimal.remove('safetySettings');
+    final Map<String, dynamic> genCfg = {
+      'temperature': 0.7,
+      'maxOutputTokens': 512,
+    };
+    minimal['generationConfig'] = genCfg;
+
+    return await http
+        .post(_url(method), headers: _headers, body: jsonEncode(minimal))
+        .timeout(timeout);
+  }
 
   /// Mengirim pesan teks ke Gemini AI
   Future<String> sendTextMessage(String message, {List<ChatMessage>? context}) async {
@@ -75,11 +102,11 @@ class ChatService {
         ]
       };
 
-      final response = await http.post(
-        Uri.parse('$_baseUrl/gemini-1.5-flash:generateContent'),
-        headers: _headers,
-        body: jsonEncode(requestBody),
-      ).timeout(const Duration(seconds: 30));
+      final response = await _postWithRetry(
+        method: 'gemini-1.5-flash:generateContent',
+        body: requestBody,
+        timeout: const Duration(seconds: 30),
+      );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -92,8 +119,15 @@ class ChatService {
           throw Exception('No valid response from Gemini AI');
         }
       } else {
-        debugPrint('❌ Gemini AI API Error: ${response.statusCode} - ${response.body}');
-        throw Exception('API Error: ${response.statusCode}');
+        String serverMessage = response.body;
+        try {
+          final parsed = jsonDecode(response.body);
+          if (parsed is Map && parsed['error'] != null) {
+            serverMessage = parsed['error']['message']?.toString() ?? serverMessage;
+          }
+        } catch (_) {}
+        debugPrint('❌ Gemini AI API Error: ${response.statusCode} - $serverMessage');
+        throw Exception('API Error: ${response.statusCode}: $serverMessage');
       }
     } catch (e) {
       debugPrint('❌ Error sending text message: $e');
@@ -156,11 +190,11 @@ class ChatService {
         }
       };
 
-      final response = await http.post(
-        Uri.parse('$_baseUrl/gemini-1.5-flash:generateContent'),
-        headers: _headers,
-        body: jsonEncode(requestBody),
-      ).timeout(const Duration(seconds: 45));
+      final response = await _postWithRetry(
+        method: 'gemini-1.5-flash:generateContent',
+        body: requestBody,
+        timeout: const Duration(seconds: 45),
+      );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -173,8 +207,15 @@ class ChatService {
           throw Exception('No valid response from Gemini AI');
         }
       } else {
-        debugPrint('❌ Gemini AI API Error: ${response.statusCode} - ${response.body}');
-        throw Exception('API Error: ${response.statusCode}');
+        String serverMessage = response.body;
+        try {
+          final parsed = jsonDecode(response.body);
+          if (parsed is Map && parsed['error'] != null) {
+            serverMessage = parsed['error']['message']?.toString() ?? serverMessage;
+          }
+        } catch (_) {}
+        debugPrint('❌ Gemini AI API Error: ${response.statusCode} - $serverMessage');
+        throw Exception('API Error: ${response.statusCode}: $serverMessage');
       }
     } catch (e) {
       debugPrint('❌ Error sending image message: $e');
