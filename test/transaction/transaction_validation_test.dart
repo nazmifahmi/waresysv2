@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:waresys_fix1/models/transaction_model.dart';
 import 'package:waresys_fix1/services/transaction_service.dart';
 import '../helpers/firebase_test_helper.dart';
@@ -48,7 +47,6 @@ void main() {
       final transaction = TransactionModel(
         id: 'test-transaction-1',
         type: TransactionType.sales,
-        customerSupplierId: 'customer-1',
         customerSupplierName: 'Test Customer',
         items: items,
         total: total,
@@ -117,10 +115,9 @@ void main() {
       expect(
         () => TransactionModel(
           id: 'test-transaction-2',
-          type: TransactionType.sales,
-          customerSupplierId: '', // Invalid empty ID
-          customerSupplierName: 'Test Customer',
-          items: [],
+        type: TransactionType.sales,
+        customerSupplierName: '', // Invalid empty name
+        items: [],
           total: 0,
           paymentMethod: PaymentMethod.cash,
           paymentStatus: PaymentStatus.paid,
@@ -137,7 +134,6 @@ void main() {
         () => TransactionModel(
           id: 'test-transaction-2',
           type: TransactionType.sales,
-          customerSupplierId: 'customer-1',
           customerSupplierName: '', // Invalid empty name
           items: [],
           total: 0,
@@ -154,23 +150,25 @@ void main() {
     });
 
     test('Transaction Status Changes Should Be Valid', () async {
+      final items = [
+        TransactionItem(
+          productId: 'product-1',
+          productName: 'Product 1',
+          quantity: 2,
+          price: 10000,
+          subtotal: 20000,
+        ),
+      ];
+      final total = 20000.0;
+      
       final transaction = TransactionModel(
         id: 'test-transaction-3',
         type: TransactionType.sales,
-        customerSupplierId: 'customer-1',
         customerSupplierName: 'Test Customer',
-        items: [
-          TransactionItem(
-            productId: 'product-1',
-            productName: 'Test Product',
-            quantity: 1,
-            price: 10000,
-            subtotal: 10000,
-          ),
-        ],
-        total: 10000,
+        items: items,
+        total: total,
         paymentMethod: PaymentMethod.cash,
-        paymentStatus: PaymentStatus.unpaid,
+        paymentStatus: PaymentStatus.paid,
         deliveryStatus: DeliveryStatus.pending,
         logHistory: [],
         createdBy: mockUser.uid,
@@ -210,24 +208,26 @@ void main() {
     });
 
     test('Canceled Transaction Should Not Be Modifiable', () async {
+      final items = [
+        TransactionItem(
+          productId: 'product-1',
+          productName: 'Product 1',
+          quantity: 1,
+          price: 15000,
+          subtotal: 15000,
+        ),
+      ];
+      final total = 15000.0;
+      
       final transaction = TransactionModel(
         id: 'test-transaction-4',
         type: TransactionType.sales,
-        customerSupplierId: 'customer-1',
         customerSupplierName: 'Test Customer',
-        items: [
-          TransactionItem(
-            productId: 'product-1',
-            productName: 'Test Product',
-            quantity: 1,
-            price: 10000,
-            subtotal: 10000,
-          ),
-        ],
-        total: 10000,
+        items: items,
+        total: total,
         paymentMethod: PaymentMethod.cash,
-        paymentStatus: PaymentStatus.unpaid,
-        deliveryStatus: DeliveryStatus.canceled,
+        paymentStatus: PaymentStatus.paid,
+        deliveryStatus: DeliveryStatus.pending,
         logHistory: [],
         createdBy: mockUser.uid,
         createdAt: DateTime.now(),
@@ -251,4 +251,4 @@ void main() {
       );
     });
   });
-} 
+}

@@ -5,7 +5,7 @@ class WarehouseRepository {
   final FirebaseFirestore _firestore;
   WarehouseRepository({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  CollectionReference get _locations => _firestore.collection('warehouse_locations');
+  CollectionReference<Map<String, dynamic>> get _locations => _firestore.collection('warehouse_locations');
 
   Future<List<WarehouseLocationModel>> getLocations({String? warehouseId, String? productId}) async {
     Query q = _locations;

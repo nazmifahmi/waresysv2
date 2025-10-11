@@ -7,8 +7,8 @@ class FleetRepository {
   final FirebaseFirestore _firestore;
   FleetRepository({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  CollectionReference get _vehicles = _firestore.collection('fleet_vehicles');
-  CollectionReference get _routes = _firestore.collection('fleet_routes');
+  CollectionReference<Map<String, dynamic>> get _vehicles => _firestore.collection('fleet_vehicles');
+  CollectionReference<Map<String, dynamic>> get _routes => _firestore.collection('fleet_routes');
 
   Future<String> upsertVehicle(FleetVehicleModel v) async {
     if (v.vehicleId.isEmpty) {

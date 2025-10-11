@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:waresys_fix1/models/transaction_model.dart';
 import 'package:waresys_fix1/models/finance_model.dart';
 import 'package:waresys_fix1/services/transaction_service.dart';
@@ -43,7 +42,6 @@ void main() {
       final transaction = TransactionModel(
         id: 'test-sales-1',
         type: TransactionType.sales,
-        customerSupplierId: 'customer-1',
         customerSupplierName: 'Test Customer',
         items: [
           TransactionItem(
@@ -108,7 +106,6 @@ void main() {
       final transaction = TransactionModel(
         id: 'test-purchase-1',
         type: TransactionType.purchase,
-        customerSupplierId: 'supplier-1',
         customerSupplierName: 'Test Supplier',
         items: [
           TransactionItem(
@@ -173,7 +170,6 @@ void main() {
       final transaction = TransactionModel(
         id: 'test-sales-2',
         type: TransactionType.sales,
-        customerSupplierId: 'customer-1',
         customerSupplierName: 'Test Customer',
         items: [
           TransactionItem(
@@ -227,4 +223,4 @@ void main() {
       expect(balanceDoc.data()?['kasUtama'], 105000); // 75000 + 30000
     });
   });
-} 
+}

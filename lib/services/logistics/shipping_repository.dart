@@ -1,13 +1,13 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../models/logistics/delivery_order_model.dart';
+import '../../models/logistics/delivery_order_model.dart' as logistics;
 import '../../models/transaction_model.dart'; // Sales/Purchase model in project
 
 class ShippingRepository {
   final FirebaseFirestore _firestore;
   ShippingRepository({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  CollectionReference get _delivery => _firestore.collection('delivery_orders');
+  CollectionReference<Map<String, dynamic>> get _delivery => _firestore.collection('delivery_orders');
 
   Future<String> generateTrackingNumber() async {
     final rnd = Random().nextInt(999999);
@@ -25,7 +25,7 @@ class ShippingRepository {
 
     final ref = await _delivery.add({
       'salesOrderId': salesOrderId,
-      'status': DeliveryStatus.PENDING.name,
+      'status': logistics.DeliveryStatus.PENDING.name,
       'courierName': null,
       'trackingNumber': null,
       'shippingLabelUrl': null,
@@ -34,7 +34,7 @@ class ShippingRepository {
     return ref.id;
   }
 
-  Future<void> updateStatus(String deliveryId, DeliveryStatus status) async {
+  Future<void> updateStatus(String deliveryId, logistics.DeliveryStatus status) async {
     await _delivery.doc(deliveryId).update({'status': status.name});
   }
 

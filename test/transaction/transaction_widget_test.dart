@@ -111,7 +111,6 @@ void main() {
         TransactionModel(
           id: 'test-sales-1',
           type: TransactionType.sales,
-          customerSupplierId: 'customer-1',
           customerSupplierName: 'Test Customer',
           items: [
             TransactionItem(
@@ -168,7 +167,6 @@ void main() {
         TransactionModel(
           id: 'test-sales-1',
           type: TransactionType.sales,
-          customerSupplierId: 'customer-1',
           customerSupplierName: 'Customer A',
           items: [],
           total: 20000,
@@ -183,7 +181,6 @@ void main() {
         TransactionModel(
           id: 'test-sales-2',
           type: TransactionType.sales,
-          customerSupplierId: 'customer-2',
           customerSupplierName: 'Customer B',
           items: [],
           total: 30000,
@@ -228,4 +225,4 @@ void main() {
       expect(find.text('Customer B'), findsNothing);
     });
   });
-} 
+}

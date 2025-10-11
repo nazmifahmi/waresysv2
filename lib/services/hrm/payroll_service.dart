@@ -53,8 +53,8 @@ class PayrollService {
       approvedClaimsTotal += (data['amount'] as num).toDouble();
     }
 
-    final totalDeductions = max(0, lateDeduction);
-    final totalAllowances = max(0, approvedClaimsTotal);
+    final totalDeductions = max(0.0, lateDeduction);
+    final totalAllowances = max(0.0, approvedClaimsTotal);
     final netSalary = baseSalary - totalDeductions + totalAllowances;
 
     return PayrollModel(

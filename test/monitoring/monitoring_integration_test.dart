@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:waresys_fix1/models/transaction_model.dart';
 import 'package:waresys_fix1/models/finance_model.dart';
 import 'package:waresys_fix1/services/transaction_service.dart';
@@ -40,7 +39,6 @@ void main() {
       final transaction = TransactionModel(
         id: 'test-transaction-1',
         type: TransactionType.sales,
-        customerSupplierId: 'customer-1',
         customerSupplierName: 'Test Customer',
         items: [
           TransactionItem(
@@ -196,4 +194,4 @@ void main() {
       expect(activityDoc.data()['action'], 'update');
     });
   });
-} 
+}

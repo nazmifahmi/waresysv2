@@ -5,8 +5,9 @@ import 'shared/profile_screen.dart';
 import 'finances/finance_screen.dart';
 import 'inventory/inventory_screen.dart';
 import 'transaction/transaction_screen.dart';
-import 'hrm/employee_list_page.dart';
+import 'hrm/hrm_home_page.dart';
 import 'crm/crm_home_page.dart';
+import 'logistics/logistics_home_page.dart';
 import '../services/auth_service.dart';
 import '../widgets/news_section.dart';
 import '../providers/news_provider.dart';
@@ -74,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _navigateToHRM(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const EmployeeListPage()),
+      MaterialPageRoute(builder: (_) => const HRMHomePage()),
     );
   }
 
@@ -82,6 +83,13 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const CRMHomePage()),
+    );
+  }
+
+  void _navigateToLogistics(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const LogisticsHomePage()),
     );
   }
 
@@ -287,6 +295,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () => _navigateToCRM(context),
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: AppTheme.spacingM),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppTheme.buildFeatureCard(
+                        icon: Icons.local_shipping,
+                        title: 'Logistics',
+                        subtitle: 'Manajemen Logistik',
+                        color: AppTheme.accentOrange,
+                        onTap: () => _navigateToLogistics(context),
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.spacingM),
+                    const Expanded(child: SizedBox()), // Empty space for alignment
                   ],
                 ),
               ],
