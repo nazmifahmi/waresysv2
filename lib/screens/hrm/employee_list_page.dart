@@ -75,7 +75,7 @@ class _EmployeeListPageState extends State<EmployeeListPage> {
                     final e = data[i];
                     return ListTile(
                       title: Text(e.fullName),
-                      subtitle: Text('${e.position} • ${e.status.name}'),
+                      subtitle: Text('${e.position} • ${e.department} • ${e.status.name}'),
                       onTap: () => _openForm(employee: e),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete, color: Colors.redAccent),

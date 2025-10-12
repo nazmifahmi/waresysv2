@@ -20,9 +20,12 @@ class _ClaimFormPageState extends State<ClaimFormPage> {
   final _picker = ImagePicker();
   File? _receipt;
   bool _saving = false;
+  String _selectedClaimType = 'Transport';
 
   late final ClaimBloc _bloc;
   final StorageUploadService _uploader = StorageUploadService();
+
+  final List<String> _claimTypes = ['Transport', 'Meal', 'Medical', 'Training', 'Other'];
 
   @override
   void initState() {
@@ -56,6 +59,7 @@ class _ClaimFormPageState extends State<ClaimFormPage> {
       description: _descCtrl.text.trim(),
       amount: double.tryParse(_amountCtrl.text.trim()) ?? 0,
       receiptImageUrl: url,
+      claimType: _selectedClaimType,
     );
     await _bloc.submit(model);
     if (mounted) {
@@ -71,6 +75,13 @@ class _ClaimFormPageState extends State<ClaimFormPage> {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(children: [
+          DropdownButtonFormField<String>(
+            value: _selectedClaimType,
+            decoration: const InputDecoration(labelText: 'Jenis Klaim'),
+            items: _claimTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+            onChanged: (value) => setState(() => _selectedClaimType = value ?? 'Transport'),
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: _descCtrl,
             decoration: const InputDecoration(labelText: 'Deskripsi'),

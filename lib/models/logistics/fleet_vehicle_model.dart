@@ -2,41 +2,48 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum VehicleStatus { AVAILABLE, ON_DUTY, MAINTENANCE }
 
-class FleetVehicleModel {
-  final String vehicleId;
-  final String licensePlate;
-  final String model;
+class FleetModel {
+  final String fleetId;
+  final String vehicleNumber;
+  final String driverName;
+  final double capacity;
   final VehicleStatus status;
   final DateTime? lastServiceDate;
   final DateTime? nextServiceDate;
 
-  FleetVehicleModel({
-    required this.vehicleId,
-    required this.licensePlate,
-    required this.model,
+  FleetModel({
+    required this.fleetId,
+    required this.vehicleNumber,
+    required this.driverName,
+    required this.capacity,
     this.status = VehicleStatus.AVAILABLE,
     this.lastServiceDate,
     this.nextServiceDate,
-  });
+  }) : assert(fleetId.isNotEmpty, 'fleetId cannot be empty'),
+       assert(vehicleNumber.isNotEmpty, 'vehicleNumber cannot be empty'),
+       assert(driverName.isNotEmpty, 'driverName cannot be empty'),
+       assert(capacity > 0, 'capacity must be greater than 0');
 
   Map<String, dynamic> toMap() => {
-        'vehicleId': vehicleId,
-        'licensePlate': licensePlate,
-        'model': model,
+        'fleetId': fleetId,
+        'vehicleNumber': vehicleNumber,
+        'driverName': driverName,
+        'capacity': capacity,
         'status': status.name,
         'lastServiceDate': lastServiceDate != null ? Timestamp.fromDate(lastServiceDate!) : null,
         'nextServiceDate': nextServiceDate != null ? Timestamp.fromDate(nextServiceDate!) : null,
       };
 
-  factory FleetVehicleModel.fromMap(Map<String, dynamic> map) => FleetVehicleModel(
-        vehicleId: map['vehicleId'],
-        licensePlate: map['licensePlate'],
-        model: map['model'],
+  factory FleetModel.fromMap(Map<String, dynamic> map) => FleetModel(
+        fleetId: map['fleetId'],
+        vehicleNumber: map['vehicleNumber'],
+        driverName: map['driverName'],
+        capacity: (map['capacity'] as num).toDouble(),
         status: VehicleStatus.values.firstWhere((e) => e.name == map['status'], orElse: () => VehicleStatus.AVAILABLE),
         lastServiceDate: (map['lastServiceDate'] as Timestamp?)?.toDate(),
         nextServiceDate: (map['nextServiceDate'] as Timestamp?)?.toDate(),
       );
 
-  factory FleetVehicleModel.fromDoc(DocumentSnapshot doc) =>
-      FleetVehicleModel.fromMap({...doc.data() as Map<String, dynamic>, 'vehicleId': doc.id});
+  factory FleetModel.fromDoc(DocumentSnapshot doc) =>
+      FleetModel.fromMap({...doc.data() as Map<String, dynamic>, 'fleetId': doc.id});
 }

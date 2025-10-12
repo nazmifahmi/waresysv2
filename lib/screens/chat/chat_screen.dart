@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../models/chat_message_model.dart';
+import '../../widgets/chat_input_widget.dart';
 import '../../constants/theme.dart';
+import '../../services/gemini_api_tester.dart';
 import '../../widgets/chat_message_widget.dart';
 import '../../widgets/chat_input_widget.dart';
 
@@ -202,6 +204,18 @@ class _ChatScreenState extends State<ChatScreen>
           // Action buttons
           Row(
             children: [
+              // API Test button
+              IconButton(
+                onPressed: () => _runApiDiagnostics(),
+                icon: Icon(
+                  Icons.bug_report_outlined,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppTheme.textSecondary
+                      : AppTheme.textSecondaryLight,
+                ),
+                tooltip: 'Test Gemini API',
+              ),
+              
               // Clear chat button
               Consumer<ChatProvider>(
                 builder: (context, chatProvider, child) {
@@ -326,5 +340,91 @@ class _ChatScreenState extends State<ChatScreen>
         ],
       ),
     );
+  }
+
+  void _runApiDiagnostics() async {
+    final tester = GeminiApiTester();
+    
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Row(
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Testing Gemini API...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final results = await tester.runDiagnostics();
+      
+      // Close loading dialog
+      Navigator.of(context).pop();
+      
+      // Show results dialog
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Gemini API Diagnostics'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: results.entries.map((entry) {
+                final isSuccess = entry.value.contains('✓') || entry.value.contains('Success');
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.key,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        entry.value,
+                        style: TextStyle(
+                          color: isSuccess ? Colors.green : Colors.red,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      // Close loading dialog
+      Navigator.of(context).pop();
+      
+      // Show error dialog
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Error'),
+          content: Text('Failed to run diagnostics: $e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }

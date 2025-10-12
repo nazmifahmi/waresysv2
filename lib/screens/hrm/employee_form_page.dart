@@ -18,6 +18,7 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameCtrl = TextEditingController();
   final _positionCtrl = TextEditingController();
+  final _departmentCtrl = TextEditingController();
   final _salaryCtrl = TextEditingController();
   DateTime? _joinDate;
   String _status = EmployeeStatus.active.name;
@@ -35,6 +36,7 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
     if (e != null) {
       _fullNameCtrl.text = e.fullName;
       _positionCtrl.text = e.position;
+      _departmentCtrl.text = e.department;
       _salaryCtrl.text = e.salary.toStringAsFixed(2);
       _joinDate = e.joinDate;
       _status = e.status.name;
@@ -68,6 +70,7 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
       userId: widget.existing?.userId ?? '',
       fullName: _fullNameCtrl.text.trim(),
       position: _positionCtrl.text.trim(),
+      department: _departmentCtrl.text.trim(),
       joinDate: _joinDate!,
       salary: double.tryParse(_salaryCtrl.text.trim()) ?? 0,
       contractUrl: _contractUrl,
@@ -106,6 +109,12 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
             TextFormField(
               controller: _positionCtrl,
               decoration: const InputDecoration(labelText: 'Jabatan'),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _departmentCtrl,
+              decoration: const InputDecoration(labelText: 'Departemen'),
               validator: (v) => v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
             ),
             const SizedBox(height: 12),

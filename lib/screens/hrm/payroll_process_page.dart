@@ -47,9 +47,9 @@ class _PayrollProcessPageState extends State<PayrollProcessPage> {
       if (_selected[e.employeeId] != true) continue;
       final p = await _payrollService.calculateSalary(
         employeeId: e.employeeId,
-        periodLabel: widget.periodLabel,
-        baseSalary: e.salary,
-        month: widget.month,
+        month: widget.periodLabel,
+        amount: e.salary,
+        paymentDate: DateTime.now(),
       );
       _preview[e.employeeId] = p;
     }

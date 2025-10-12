@@ -1,46 +1,42 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class WarehouseLocationModel {
-  final String locationId;
+class WarehouseModel {
   final String warehouseId;
-  final String zone;
-  final String rack;
-  final String binCode;
-  final String productId;
-  final int quantity;
+  final String name;
+  final String location;
+  final int stockCount;
+  final int capacity;
 
-  WarehouseLocationModel({
-    required this.locationId,
+  WarehouseModel({
     required this.warehouseId,
-    required this.zone,
-    required this.rack,
-    required this.binCode,
-    required this.productId,
-    required this.quantity,
-  }) : assert(quantity >= 0);
+    required this.name,
+    required this.location,
+    required this.stockCount,
+    required this.capacity,
+  }) : assert(warehouseId.isNotEmpty, 'warehouseId cannot be empty'),
+       assert(name.isNotEmpty, 'name cannot be empty'),
+       assert(location.isNotEmpty, 'location cannot be empty'),
+       assert(stockCount >= 0, 'stockCount must be >= 0'),
+       assert(capacity > 0, 'capacity must be greater than 0');
 
   Map<String, dynamic> toMap() => {
-        'locationId': locationId,
         'warehouseId': warehouseId,
-        'zone': zone,
-        'rack': rack,
-        'binCode': binCode,
-        'productId': productId,
-        'quantity': quantity,
-        'binKey': '$warehouseId|$zone|$rack|$binCode',
+        'name': name,
+        'location': location,
+        'stockCount': stockCount,
+        'capacity': capacity,
+        'nameLower': name.toLowerCase(),
       };
 
-  factory WarehouseLocationModel.fromMap(Map<String, dynamic> map) => WarehouseLocationModel(
-        locationId: map['locationId'],
+  factory WarehouseModel.fromMap(Map<String, dynamic> map) => WarehouseModel(
         warehouseId: map['warehouseId'],
-        zone: map['zone'],
-        rack: map['rack'],
-        binCode: map['binCode'],
-        productId: map['productId'],
-        quantity: (map['quantity'] ?? 0) as int,
+        name: map['name'],
+        location: map['location'],
+        stockCount: (map['stockCount'] ?? 0) as int,
+        capacity: (map['capacity'] ?? 0) as int,
       );
 
-  factory WarehouseLocationModel.fromDoc(DocumentSnapshot doc) =>
-      WarehouseLocationModel.fromMap({...doc.data() as Map<String, dynamic>, 'locationId': doc.id});
+  factory WarehouseModel.fromDoc(DocumentSnapshot doc) =>
+      WarehouseModel.fromMap({...doc.data() as Map<String, dynamic>, 'warehouseId': doc.id});
 }

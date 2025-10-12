@@ -25,8 +25,8 @@ class PayrollHistoryPage extends StatelessWidget {
             itemBuilder: (context, i) {
               final p = data[i];
               return ListTile(
-                title: Text(p.period),
-                subtitle: Text('Net: ${p.netSalary.toStringAsFixed(2)}'),
+                title: Text(p.month),
+                subtitle: Text('Amount: ${p.amount.toStringAsFixed(2)} • Status: ${p.status}'),
                 trailing: p.payslipUrl != null
                     ? IconButton(
                         icon: const Icon(Icons.download),

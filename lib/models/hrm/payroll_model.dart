@@ -3,7 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class PayrollModel {
   final String payrollId;
   final String employeeId;
-  final String period; // e.g., "Oktober 2025"
+  final double amount;
+  final String month;
+  final String status;
+  final DateTime? paymentDate;
   final double baseSalary;
   final double totalDeductions;
   final double totalAllowances;
@@ -13,7 +16,10 @@ class PayrollModel {
   PayrollModel({
     required this.payrollId,
     required this.employeeId,
-    required this.period,
+    required this.amount,
+    required this.month,
+    required this.status,
+    this.paymentDate,
     required this.baseSalary,
     required this.totalDeductions,
     required this.totalAllowances,
@@ -21,13 +27,17 @@ class PayrollModel {
     this.payslipUrl,
   }) : assert(payrollId.isNotEmpty, 'payrollId cannot be empty'),
        assert(employeeId.isNotEmpty, 'employeeId cannot be empty'),
-       assert(period.isNotEmpty, 'period cannot be empty'),
-       assert(baseSalary >= 0 && totalDeductions >= 0 && totalAllowances >= 0 && netSalary >= 0);
+       assert(month.isNotEmpty, 'month cannot be empty'),
+       assert(status.isNotEmpty, 'status cannot be empty'),
+       assert(amount >= 0 && baseSalary >= 0 && totalDeductions >= 0 && totalAllowances >= 0 && netSalary >= 0);
 
   Map<String, dynamic> toMap() => {
         'payrollId': payrollId,
         'employeeId': employeeId,
-        'period': period,
+        'amount': amount,
+        'month': month,
+        'status': status,
+        'paymentDate': paymentDate != null ? Timestamp.fromDate(paymentDate!) : null,
         'baseSalary': baseSalary,
         'totalDeductions': totalDeductions,
         'totalAllowances': totalAllowances,
@@ -38,7 +48,10 @@ class PayrollModel {
   factory PayrollModel.fromMap(Map<String, dynamic> map) => PayrollModel(
         payrollId: map['payrollId'],
         employeeId: map['employeeId'],
-        period: map['period'],
+        amount: (map['amount'] as num).toDouble(),
+        month: map['month'],
+        status: map['status'],
+        paymentDate: (map['paymentDate'] as Timestamp?)?.toDate(),
         baseSalary: (map['baseSalary'] as num).toDouble(),
         totalDeductions: (map['totalDeductions'] as num).toDouble(),
         totalAllowances: (map['totalAllowances'] as num).toDouble(),

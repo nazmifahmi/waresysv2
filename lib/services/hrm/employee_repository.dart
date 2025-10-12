@@ -33,6 +33,7 @@ class EmployeeRepository {
     final ref = await _col.add({
       ...employee.toMap(),
       'fullNameLower': employee.fullName.toLowerCase(),
+      'departmentLower': employee.department.toLowerCase(),
     });
     await _col.doc(ref.id).update({'employeeId': ref.id});
     return ref.id;
@@ -42,6 +43,7 @@ class EmployeeRepository {
     await _col.doc(employee.employeeId).update({
       ...employee.toMap(),
       'fullNameLower': employee.fullName.toLowerCase(),
+      'departmentLower': employee.department.toLowerCase(),
     });
   }
 

@@ -5,6 +5,7 @@ enum ClaimStatus { pending, approved, rejected }
 class ClaimModel {
   final String claimId;
   final String employeeId;
+  final String claimType;
   final DateTime submissionDate;
   final String description;
   final double amount;
@@ -14,6 +15,7 @@ class ClaimModel {
   ClaimModel({
     required this.claimId,
     required this.employeeId,
+    required this.claimType,
     required this.submissionDate,
     required this.description,
     required this.amount,
@@ -21,12 +23,14 @@ class ClaimModel {
     this.status = ClaimStatus.pending,
   }) : assert(claimId.isNotEmpty),
        assert(employeeId.isNotEmpty),
+       assert(claimType.isNotEmpty),
        assert(description.isNotEmpty),
        assert(amount >= 0);
 
   Map<String, dynamic> toMap() => {
         'claimId': claimId,
         'employeeId': employeeId,
+        'claimType': claimType,
         'submissionDate': Timestamp.fromDate(submissionDate),
         'description': description,
         'amount': amount,
@@ -37,6 +41,7 @@ class ClaimModel {
   factory ClaimModel.fromMap(Map<String, dynamic> map) => ClaimModel(
         claimId: map['claimId'],
         employeeId: map['employeeId'],
+        claimType: map['claimType'],
         submissionDate: (map['submissionDate'] as Timestamp).toDate(),
         description: map['description'],
         amount: (map['amount'] as num).toDouble(),

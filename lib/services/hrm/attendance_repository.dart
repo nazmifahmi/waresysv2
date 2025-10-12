@@ -27,10 +27,12 @@ class AttendanceRepository {
     required GeoPoint location,
     required bool isLate,
   }) async {
+    final date = DateTime(checkInTime.year, checkInTime.month, checkInTime.day);
     final ref = await _col.add({
       'employeeId': employeeId,
       'checkInTimestamp': Timestamp.fromDate(checkInTime),
       'checkInLocation': location,
+      'date': Timestamp.fromDate(date),
       'status': isLate ? AttendanceStatus.late.name : AttendanceStatus.present.name,
     });
     await _col.doc(ref.id).update({'attendanceId': ref.id});

@@ -5,6 +5,7 @@ enum AttendanceStatus { present, late }
 class AttendanceModel {
   final String attendanceId;
   final String employeeId;
+  final DateTime date;
   final DateTime? checkInTimestamp;
   final DateTime? checkOutTimestamp;
   final GeoPoint? checkInLocation;
@@ -13,6 +14,7 @@ class AttendanceModel {
   AttendanceModel({
     required this.attendanceId,
     required this.employeeId,
+    required this.date,
     this.checkInTimestamp,
     this.checkOutTimestamp,
     this.checkInLocation,
@@ -23,6 +25,7 @@ class AttendanceModel {
   Map<String, dynamic> toMap() => {
         'attendanceId': attendanceId,
         'employeeId': employeeId,
+        'date': Timestamp.fromDate(date),
         'checkInTimestamp': checkInTimestamp != null ? Timestamp.fromDate(checkInTimestamp!) : null,
         'checkOutTimestamp': checkOutTimestamp != null ? Timestamp.fromDate(checkOutTimestamp!) : null,
         'checkInLocation': checkInLocation,
@@ -32,6 +35,7 @@ class AttendanceModel {
   factory AttendanceModel.fromMap(Map<String, dynamic> map) => AttendanceModel(
         attendanceId: map['attendanceId'],
         employeeId: map['employeeId'],
+        date: (map['date'] as Timestamp).toDate(),
         checkInTimestamp: (map['checkInTimestamp'] as Timestamp?)?.toDate(),
         checkOutTimestamp: (map['checkOutTimestamp'] as Timestamp?)?.toDate(),
         checkInLocation: map['checkInLocation'],

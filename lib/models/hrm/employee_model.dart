@@ -7,6 +7,7 @@ class EmployeeModel {
   final String userId;
   final String fullName;
   final String position;
+  final String department;
   final DateTime joinDate;
   final double salary;
   final String? contractUrl;
@@ -17,6 +18,7 @@ class EmployeeModel {
     required this.userId,
     required this.fullName,
     required this.position,
+    required this.department,
     required this.joinDate,
     required this.salary,
     this.contractUrl,
@@ -25,6 +27,7 @@ class EmployeeModel {
        assert(userId.isNotEmpty, 'userId cannot be empty'),
        assert(fullName.isNotEmpty, 'fullName cannot be empty'),
        assert(position.isNotEmpty, 'position cannot be empty'),
+       assert(department.isNotEmpty, 'department cannot be empty'),
        assert(salary >= 0, 'salary must be >= 0');
 
   Map<String, dynamic> toMap() => {
@@ -32,6 +35,7 @@ class EmployeeModel {
         'userId': userId,
         'fullName': fullName,
         'position': position,
+        'department': department,
         'joinDate': Timestamp.fromDate(joinDate),
         'salary': salary,
         'contractUrl': contractUrl,
@@ -43,6 +47,7 @@ class EmployeeModel {
         userId: map['userId'],
         fullName: map['fullName'],
         position: map['position'],
+        department: map['department'] ?? '',
         joinDate: (map['joinDate'] as Timestamp).toDate(),
         salary: (map['salary'] as num).toDouble(),
         contractUrl: map['contractUrl'],

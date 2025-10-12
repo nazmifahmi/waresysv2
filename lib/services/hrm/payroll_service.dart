@@ -17,12 +17,12 @@ class PayrollService {
   // - Approved claim adds to allowance
   Future<PayrollModel> calculateSalary({
     required String employeeId,
-    required String periodLabel, // e.g., "Oktober 2025"
-    required double baseSalary,
-    required DateTime month,
+    required String month, // e.g., "October"
+    required double amount,
+    required DateTime paymentDate,
   }) async {
-    final start = DateTime(month.year, month.month);
-    final end = DateTime(month.year, month.month + 1);
+    final start = DateTime(paymentDate.year, paymentDate.month);
+    final end = DateTime(paymentDate.year, paymentDate.month + 1);
 
     final attendanceSnap = await _attendanceCol
         .where('employeeId', isEqualTo: employeeId)
@@ -45,7 +45,7 @@ class PayrollService {
       }
     }
 
-    final double lateDeduction = baseSalary * 0.01 * lateDays;
+    final double lateDeduction = amount * 0.01 * lateDays;
 
     double approvedClaimsTotal = 0.0;
     for (final c in claimsSnap.docs) {
@@ -55,13 +55,16 @@ class PayrollService {
 
     final totalDeductions = max(0.0, lateDeduction);
     final totalAllowances = max(0.0, approvedClaimsTotal);
-    final netSalary = baseSalary - totalDeductions + totalAllowances;
+    final netSalary = amount - totalDeductions + totalAllowances;
 
     return PayrollModel(
       payrollId: '',
       employeeId: employeeId,
-      period: periodLabel,
-      baseSalary: baseSalary,
+      amount: amount,
+      month: month,
+      status: 'pending',
+      paymentDate: paymentDate,
+      baseSalary: amount,
       totalDeductions: totalDeductions,
       totalAllowances: totalAllowances,
       netSalary: netSalary,
@@ -76,7 +79,7 @@ class PayrollService {
   }
 
   Stream<List<PayrollModel>> watchByEmployee(String employeeId) {
-    return _payrollCol.where('employeeId', isEqualTo: employeeId).orderBy('period', descending: true).snapshots().map(
+    return _payrollCol.where('employeeId', isEqualTo: employeeId).orderBy('month', descending: true).snapshots().map(
           (s) => s.docs.map((d) => PayrollModel.fromDoc(d)).toList(),
         );
   }

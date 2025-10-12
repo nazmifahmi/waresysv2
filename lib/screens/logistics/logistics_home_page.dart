@@ -69,7 +69,7 @@ class LogisticsHomePage extends StatelessWidget {
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const FleetMapPage(routeId: 'default_route'),
+                                builder: (_) => const FleetMapPage(),
                               ),
                             ),
                           ),
@@ -89,7 +89,7 @@ class LogisticsHomePage extends StatelessWidget {
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const WarehouseManagementPage(warehouseId: 'main_warehouse'),
+                                builder: (_) => const WarehouseManagementPage(),
                               ),
                             ),
                           ),
@@ -105,7 +105,7 @@ class LogisticsHomePage extends StatelessWidget {
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const ForecastDashboardPage(productId: 'default'),
+                                builder: (_) => const ForecastDashboardPage(),
                               ),
                             ),
                           ),

@@ -5,70 +5,68 @@ class WarehouseRepository {
   final FirebaseFirestore _firestore;
   WarehouseRepository({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  CollectionReference<Map<String, dynamic>> get _locations => _firestore.collection('warehouse_locations');
+  CollectionReference<Map<String, dynamic>> get _warehouses => _firestore.collection('warehouses');
 
-  Future<List<WarehouseLocationModel>> getLocations({String? warehouseId, String? productId}) async {
-    Query q = _locations;
-    if (warehouseId != null) q = q.where('warehouseId', isEqualTo: warehouseId);
-    if (productId != null) q = q.where('productId', isEqualTo: productId);
-    final snap = await q.get();
-    return snap.docs.map((d) => WarehouseLocationModel.fromDoc(d)).toList();
-  }
-
-  Future<String> upsertLocation(WarehouseLocationModel m) async {
-    if (m.locationId.isEmpty) {
-      final ref = await _locations.add(m.toMap());
-      await _locations.doc(ref.id).update({'locationId': ref.id});
-      return ref.id;
-    } else {
-      await _locations.doc(m.locationId).set(m.toMap(), SetOptions(merge: true));
-      return m.locationId;
+  Future<List<WarehouseModel>> getAll({String? search}) async {
+    Query query = _warehouses.orderBy('name');
+    if (search != null && search.trim().isNotEmpty) {
+      query = _warehouses.where('nameLower', isGreaterThanOrEqualTo: search.toLowerCase())
+                          .where('nameLower', isLessThanOrEqualTo: '${search.toLowerCase()}\uf8ff');
     }
+    final snap = await query.get();
+    return snap.docs.map((d) => WarehouseModel.fromDoc(d)).toList();
   }
 
-  Future<void> updateStockLocation({
-    required String locationId,
-    required int deltaQty,
+  Stream<List<WarehouseModel>> watchAll() {
+    return _warehouses.orderBy('name').snapshots().map((s) => s.docs.map((d) => WarehouseModel.fromDoc(d)).toList());
+  }
+
+  Future<WarehouseModel?> getById(String id) async {
+    final doc = await _warehouses.doc(id).get();
+    if (!doc.exists) return null;
+    return WarehouseModel.fromDoc(doc);
+  }
+
+  Future<String> create(WarehouseModel warehouse) async {
+    final ref = await _warehouses.add({
+      ...warehouse.toMap(),
+      'nameLower': warehouse.name.toLowerCase(),
+    });
+    await _warehouses.doc(ref.id).update({'warehouseId': ref.id});
+    return ref.id;
+  }
+
+  Future<void> update(WarehouseModel warehouse) async {
+    await _warehouses.doc(warehouse.warehouseId).update({
+      ...warehouse.toMap(),
+      'nameLower': warehouse.name.toLowerCase(),
+    });
+  }
+
+  Future<void> delete(String id) async {
+    await _warehouses.doc(id).delete();
+  }
+
+  Future<void> updateStock({
+    required String warehouseId,
+    required int deltaStock,
   }) async {
-    final ref = _locations.doc(locationId);
+    final ref = _warehouses.doc(warehouseId);
     await _firestore.runTransaction((tx) async {
       final doc = await tx.get(ref);
       final data = doc.data() as Map<String, dynamic>;
-      final current = (data['quantity'] ?? 0) as int;
-      final next = current + deltaQty;
-      if (next < 0) throw Exception('Stok lokasi tidak mencukupi');
-      tx.update(ref, {'quantity': next});
+      final current = (data['stockCount'] ?? 0) as int;
+      final next = current + deltaStock;
+      if (next < 0) throw Exception('Stock tidak mencukupi');
+      tx.update(ref, {'stockCount': next});
     });
   }
 
-  Future<WarehouseLocationModel?> findOptimalBin({
-    required String warehouseId,
-    required String productId,
-    int requiredQty = 1,
-  }) async {
-    // Simple heuristic: choose bin with highest free capacity (mock: highest current quantity for same product)
-    final snap = await _locations
-        .where('warehouseId', isEqualTo: warehouseId)
-        .where('productId', isEqualTo: productId)
-        .orderBy('quantity', descending: true)
-        .limit(1)
-        .get();
-    if (snap.docs.isEmpty) return null;
-    return WarehouseLocationModel.fromDoc(snap.docs.first);
-  }
-
-  Future<List<WarehouseLocationModel>> getPickAndPackRoute({
-    required String warehouseId,
-    required List<String> productIdsInOrder,
-  }) async {
-    // Returns bins ordered by zone-rack-bin to minimize walking distance
-    final snap = await _locations.where('warehouseId', isEqualTo: warehouseId).where('productId', whereIn: productIdsInOrder).get();
-    final list = snap.docs.map((d) => WarehouseLocationModel.fromDoc(d)).toList();
-    list.sort((a, b) {
-      final ka = '${a.zone}:${a.rack}:${a.binCode}';
-      final kb = '${b.zone}:${b.rack}:${b.binCode}';
-      return ka.compareTo(kb);
-    });
-    return list;
+  Future<List<WarehouseModel>> getLowStockWarehouses({double threshold = 0.2}) async {
+    final snap = await _warehouses.get();
+    return snap.docs
+        .map((d) => WarehouseModel.fromDoc(d))
+        .where((w) => w.stockCount / w.capacity < threshold)
+        .toList();
   }
 }

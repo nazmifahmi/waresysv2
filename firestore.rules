@@ -48,6 +48,122 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if request.auth != null;
     }
+
+    // ========== HRM MODULE COLLECTIONS ==========
+    // Rules untuk employees collection
+    match /employees/{employeeId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Rules untuk attendance collection
+    match /attendance/{attendanceId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Rules untuk leaves collection
+    match /leaves/{leaveId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Rules untuk tasks collection
+    match /tasks/{taskId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Rules untuk claims collection
+    match /claims/{claimId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+
+    // ========== CRM MODULE COLLECTIONS ==========
+    // Rules untuk customers collection
+    match /customers/{customerId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Rules untuk leads collection
+    match /leads/{leadId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Rules untuk contacts collection
+    match /contacts/{contactId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Rules untuk sales collection
+    match /sales/{salesId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Rules untuk feedback collection
+    match /feedback/{feedbackId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+
+    // ========== LOGISTICS MODULE COLLECTIONS ==========
+    // Rules untuk fleets collection
+    match /fleets/{fleetId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Rules untuk warehouses collection
+    match /warehouses/{warehouseId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Rules untuk delivery_orders collection
+    match /delivery_orders/{deliveryId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Rules untuk shipments collection
+    match /shipments/{shipmentId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+    
+    // Rules untuk forecasts collection
+    match /forecasts/{forecastId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
+
+    // ========== CONNECTION TEST COLLECTION ==========
+    // Rules untuk connection test collection
+    match /_connection_test/{testId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+      allow create: if request.auth != null;
+    }
     
     // Default rule - deny all other access
     match /{document=**} {
