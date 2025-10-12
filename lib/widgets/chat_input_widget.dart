@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../constants/theme.dart';
+import '../services/voice_service.dart';
 
 class ChatInputWidget extends StatefulWidget {
   final Function(String) onSendMessage;
@@ -22,12 +23,17 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   final ImagePicker _imagePicker = ImagePicker();
+  final VoiceService _voiceService = VoiceService();
+  
   bool _isTextEmpty = true;
+  bool _isListening = false;
+  double _soundLevel = 0.0;
 
   @override
   void initState() {
     super.initState();
     _textController.addListener(_onTextChanged);
+    _initializeVoiceService();
   }
 
   @override
@@ -35,7 +41,38 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
     _textController.removeListener(_onTextChanged);
     _textController.dispose();
     _focusNode.dispose();
+    _voiceService.dispose();
     super.dispose();
+  }
+
+  void _initializeVoiceService() async {
+    await _voiceService.initialize();
+    
+    // Listen to voice service streams
+    _voiceService.textStream.listen((text) {
+      if (mounted) {
+        setState(() {
+          _textController.text = text;
+          _isTextEmpty = text.trim().isEmpty;
+        });
+      }
+    });
+    
+    _voiceService.listeningStream.listen((isListening) {
+      if (mounted) {
+        setState(() {
+          _isListening = isListening;
+        });
+      }
+    });
+    
+    _voiceService.soundLevelStream.listen((level) {
+      if (mounted) {
+        setState(() {
+          _soundLevel = level;
+        });
+      }
+    });
   }
 
   void _onTextChanged() {
@@ -168,6 +205,22 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
     );
   }
 
+  void _toggleVoiceRecognition() async {
+    if (_isListening) {
+      await _voiceService.stopListening();
+    } else {
+      final success = await _voiceService.startListening();
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal memulai pengenalan suara. Pastikan izin mikrofon telah diberikan.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -213,6 +266,56 @@ class _ChatInputWidgetState extends State<ChatInputWidget> {
                       color: widget.isLoading
                           ? Colors.grey[600]
                           : AppTheme.primaryGreen,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            
+            // Voice button
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: widget.isLoading ? null : _toggleVoiceRecognition,
+                  borderRadius: BorderRadius.circular(24),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: _isListening
+                          ? AppTheme.errorColor.withOpacity(0.1)
+                          : (widget.isLoading
+                              ? Colors.grey[300]
+                              : AppTheme.accentBlue.withOpacity(0.1)),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _isListening
+                            ? AppTheme.errorColor.withOpacity(0.3)
+                            : (widget.isLoading
+                                ? Colors.grey[400]!
+                                : AppTheme.accentBlue.withOpacity(0.3)),
+                      ),
+                      boxShadow: _isListening
+                          ? [
+                              BoxShadow(
+                                color: AppTheme.errorColor.withOpacity(0.3),
+                                blurRadius: 8,
+                                spreadRadius: _soundLevel * 2,
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Icon(
+                      _isListening ? Icons.mic : Icons.mic_none,
+                      color: _isListening
+                          ? AppTheme.errorColor
+                          : (widget.isLoading
+                              ? Colors.grey[600]
+                              : AppTheme.accentBlue),
                       size: 20,
                     ),
                   ),

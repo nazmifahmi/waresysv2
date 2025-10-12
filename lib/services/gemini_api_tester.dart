@@ -7,19 +7,23 @@ class GeminiApiTester {
   static const String _apiKey = 'AIzaSyCbUmbfANUx7rWGtRJAGtMosW6O6BfkKY0';
   
   /// Test different API versions and models
-  static Future<void> runDiagnostics() async {
+  Future<String> runDiagnostics() async {
     debugPrint('🔍 Starting Gemini API Diagnostics...');
+    
+    final results = StringBuffer();
+    results.writeln('🔍 Gemini API Diagnostics Results:');
+    results.writeln('');
     
     // Test different configurations
     final configs = [
       {
         'version': 'v1',
-        'model': 'gemini-1.5-flash',
+        'model': 'gemini-flash-latest',
         'description': 'Current configuration'
       },
       {
         'version': 'v1beta',
-        'model': 'gemini-1.5-flash',
+        'model': 'gemini-flash-latest',
         'description': 'Beta version'
       },
       {
@@ -35,16 +39,19 @@ class GeminiApiTester {
     ];
     
     for (final config in configs) {
-      await _testConfiguration(
+      final result = await _testConfiguration(
         config['version']!,
         config['model']!,
         config['description']!,
       );
+      results.writeln(result);
       await Future.delayed(const Duration(seconds: 2)); // Rate limiting
     }
+    
+    return results.toString();
   }
   
-  static Future<void> _testConfiguration(
+  static Future<String> _testConfiguration(
     String version,
     String model,
     String description,
@@ -81,8 +88,10 @@ class GeminiApiTester {
         if (data['candidates'] != null && data['candidates'].isNotEmpty) {
           final content = data['candidates'][0]['content']['parts'][0]['text'];
           debugPrint('✅ SUCCESS: $content');
+          return '✅ $description: SUCCESS - $content';
         } else {
           debugPrint('⚠️ Empty response from API');
+          return '⚠️ $description: Empty response from API';
         }
       } else {
         debugPrint('❌ FAILED: ${response.statusCode}');
@@ -93,13 +102,16 @@ class GeminiApiTester {
           final errorData = jsonDecode(response.body);
           if (errorData['error'] != null) {
             debugPrint('Error Details: ${errorData['error']['message']}');
+            return '❌ $description: FAILED - ${errorData['error']['message']}';
           }
         } catch (e) {
           debugPrint('Could not parse error response');
         }
+        return '❌ $description: FAILED - Status ${response.statusCode}';
       }
     } catch (e) {
       debugPrint('❌ Exception: $e');
+      return '❌ $description: Exception - $e';
     }
   }
   

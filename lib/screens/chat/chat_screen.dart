@@ -372,31 +372,9 @@ class _ChatScreenState extends State<ChatScreen>
         builder: (context) => AlertDialog(
           title: const Text('Gemini API Diagnostics'),
           content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: results.entries.map((entry) {
-                final isSuccess = entry.value.contains('✓') || entry.value.contains('Success');
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        entry.key,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        entry.value,
-                        style: TextStyle(
-                          color: isSuccess ? Colors.green : Colors.red,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                  ),
-                );
-              }).toList(),
+            child: Text(
+              results,
+              style: const TextStyle(fontFamily: 'monospace'),
             ),
           ),
           actions: [

@@ -14,7 +14,7 @@ class FirestoreConnectionService {
   bool _isConnected = false;
   bool _isInitialized = false;
   Timer? _retryTimer;
-  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   
   // Connection status stream
   final StreamController<bool> _connectionStatusController = StreamController<bool>.broadcast();
@@ -42,8 +42,10 @@ class FirestoreConnectionService {
 
   /// Setup connectivity monitoring
   void _setupConnectivityMonitoring() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
-      if (result != ConnectivityResult.none && !_isConnected) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+      // Check if any of the connectivity results is not none
+      bool hasConnection = results.any((result) => result != ConnectivityResult.none);
+      if (hasConnection && !_isConnected) {
         debugPrint('📶 Network connectivity restored, attempting Firestore reconnection...');
         _attemptConnection();
       }

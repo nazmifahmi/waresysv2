@@ -14,6 +14,7 @@ import 'package:provider/provider.dart';
 import '../../constants/theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/floating_chat_bubble.dart';
+import 'barcode_scanner_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -194,11 +195,12 @@ class _InventoryProductPageState extends State<InventoryProductPage> {
     });
   }
 
-  void _showAddEditProductDialog([Product? product]) {
+  void _showAddEditProductDialog([Product? product, String? prefilledSku]) {
     showDialog(
       context: context,
       builder: (context) => AddEditProductDialog(
         product: product,
+        prefilledSku: prefilledSku,
         onSaved: () {
           setState(() {});
           _loadCategories();
@@ -296,6 +298,109 @@ class _InventoryProductPageState extends State<InventoryProductPage> {
     return f.format(n);
   }
 
+  void _openBarcodeScanner() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BarcodeScannerScreen(
+          title: 'Scan Product Barcode',
+          onBarcodeScanned: (barcode) {
+            Navigator.pop(context);
+            _searchProductByBarcode(barcode);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _searchProductByBarcode(String barcode) async {
+    try {
+      final products = await _firestoreService.getProducts();
+      final product = products.where((p) => p.sku == barcode).firstOrNull;
+      
+      if (product != null) {
+        _showProductDetails(context, product);
+      } else {
+        _showBarcodeNotFoundDialog(barcode);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error searching product: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showBarcodeNotFoundDialog(String barcode) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceDark,
+        title: Text(
+          'Product Not Found',
+          style: AppTheme.heading3.copyWith(
+            color: AppTheme.accentOrange,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'No product found with barcode:',
+              style: AppTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                barcode,
+                style: AppTheme.bodyMedium.copyWith(
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Would you like to create a new product with this barcode?',
+              style: AppTheme.bodySmall.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: AppTheme.bodyMedium.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showAddEditProductDialog(null, barcode);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentOrange,
+            ),
+            child: const Text('Create Product'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -362,6 +467,18 @@ class _InventoryProductPageState extends State<InventoryProductPage> {
                 text: 'Tambah',
                 icon: Icons.add,
                 onPressed: () => _showAddEditProductDialog(),
+              ),
+              const SizedBox(width: AppTheme.spacingS),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.accentBlue,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusS),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+                  onPressed: _openBarcodeScanner,
+                  tooltip: 'Scan Barcode',
+                ),
               ),
             ],
           ),
@@ -433,9 +550,15 @@ class _InventoryProductPageState extends State<InventoryProductPage> {
 
 class AddEditProductDialog extends StatefulWidget {
   final Product? product;
+  final String? prefilledSku;
   final VoidCallback onSaved;
   final List<String> categories;
-  const AddEditProductDialog({this.product, required this.onSaved, required this.categories});
+  const AddEditProductDialog({
+    this.product, 
+    this.prefilledSku,
+    required this.onSaved, 
+    required this.categories,
+  });
   @override
   State<AddEditProductDialog> createState() => _AddEditProductDialogState();
 }
@@ -465,7 +588,7 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
     _priceController = TextEditingController(text: widget.product?.price.toString() ?? '');
     _stockController = TextEditingController(text: widget.product?.stock.toString() ?? '');
     _categoryController = TextEditingController(text: widget.product?.category ?? '');
-    _skuController = TextEditingController(text: widget.product?.sku ?? '');
+    _skuController = TextEditingController(text: widget.product?.sku ?? widget.prefilledSku ?? '');
     _newCategoryController = TextEditingController();
   }
 
@@ -630,6 +753,44 @@ class _InventoryStockMutationPageState extends State<InventoryStockMutationPage>
     super.dispose();
   }
 
+  void _openBarcodeScannerForMutation(List<Product> products) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BarcodeScannerScreen(
+          title: 'Scan Product for Stock Mutation',
+          onBarcodeScanned: (barcode) {
+            Navigator.pop(context);
+            _selectProductByBarcode(barcode, products);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _selectProductByBarcode(String barcode, List<Product> products) {
+    final product = products.where((p) => p.sku == barcode).firstOrNull;
+    
+    if (product != null) {
+      setState(() {
+        _selectedProductId = product.id;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Product selected: ${product.name}'),
+          backgroundColor: AppTheme.accentGreen,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No product found with barcode: $barcode'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -644,16 +805,34 @@ class _InventoryStockMutationPageState extends State<InventoryStockMutationPage>
             builder: (context, snapshot) {
               if (!snapshot.hasData) return const CircularProgressIndicator();
               final products = snapshot.data!;
-              return DropdownButtonFormField<String>(
-                value: _selectedProductId,
-                items: products
-                    .map((p) => DropdownMenuItem(
-                          value: p.id,
-                          child: Text(p.name),
-                        ))
-                    .toList(),
-                onChanged: (val) => setState(() => _selectedProductId = val),
-                decoration: const InputDecoration(labelText: 'Pilih Produk'),
+              return Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedProductId,
+                      items: products
+                          .map((p) => DropdownMenuItem(
+                                value: p.id,
+                                child: Text(p.name),
+                              ))
+                          .toList(),
+                      onChanged: (val) => setState(() => _selectedProductId = val),
+                      decoration: const InputDecoration(labelText: 'Pilih Produk'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentBlue,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusS),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+                      onPressed: () => _openBarcodeScannerForMutation(products),
+                      tooltip: 'Scan Product Barcode',
+                    ),
+                  ),
+                ],
               );
             },
           ),

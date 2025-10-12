@@ -59,7 +59,7 @@ dependencies:
   package_info_plus: ^8.0.0
   url_launcher: ^6.2.6
   image_picker: ^1.0.7
-  connectivity_plus: ^5.0.2
+  connectivity_plus: ^7.0.0
   permission_handler: ^11.3.1
   geolocator: ^11.0.0
   google_maps_flutter: ^2.6.1
@@ -88,11 +88,16 @@ dependencies:
   # Audio
   audioplayers: ^6.0.0
   just_audio: ^0.9.36
+  
+  # Speech recognition & voice
+  speech_to_text: ^6.6.2
+  # flutter_sound: ^9.2.13  # <-- DIHAPUS karena menyebabkan error kompilasi
+  record: ^5.0.4
 
   # QR & barcode
   qr_flutter: ^4.1.0
   # barcode_scan2 tidak di-maintain, ganti dengan mobile_scanner
-  mobile_scanner: ^4.0.1
+  mobile_scanner: ^5.2.3
 
   # AI & ML
   tflite_flutter: ^0.11.0

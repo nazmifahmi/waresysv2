@@ -103,7 +103,7 @@ class ChatService {
       };
 
       final response = await _postWithRetry(
-        method: 'gemini-1.5-flash:generateContent',
+        method: 'gemini-flash-latest:generateContent',
         body: requestBody,
         timeout: const Duration(seconds: 30),
       );
@@ -191,7 +191,7 @@ class ChatService {
       };
 
       final response = await _postWithRetry(
-        method: 'gemini-1.5-flash:generateContent',
+        method: 'gemini-flash-latest:generateContent',
         body: requestBody,
         timeout: const Duration(seconds: 45),
       );

@@ -572,7 +572,7 @@ Future<String> sendTextMessage(String message, {List<ChatMessage>? context}) asy
     };
 
     final response = await http.post(
-      Uri.parse('$_baseUrl/gemini-1.5-flash:generateContent'),
+      Uri.parse('$_baseUrl/gemini-flash-latest:generateContent'),
       headers: _headers,
       body: jsonEncode(requestBody),
     ).timeout(const Duration(seconds: 30));
@@ -625,7 +625,7 @@ Future<String> sendImageMessage(String imagePath, {String? prompt}) async {
     };
 
     final response = await http.post(
-      Uri.parse('$_baseUrl/gemini-1.5-flash:generateContent'),
+      Uri.parse('$_baseUrl/gemini-flash-latest:generateContent'),
       headers: _headers,
       body: jsonEncode(requestBody),
     ).timeout(const Duration(seconds: 45));

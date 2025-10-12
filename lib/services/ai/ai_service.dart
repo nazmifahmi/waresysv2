@@ -1,14 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:tflite_flutter/tflite_flutter.dart';
 // import 'package:firebase_ml_model_downloader/firebase_ml_model_downloader.dart'; // <-- DIHAPUS
+// import 'package:tflite_flutter/tflite_flutter.dart'; // <-- DIHAPUS karena menyebabkan error
 import '../firestore_service.dart';
-import '../../models/transaction_model.dart';
-import '../../models/product_model.dart';
-import '../../models/finance_model.dart';
 import 'dart:isolate';
-import 'tflite/custom_interpreter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import 'predictors/stock_predictor.dart';
 import 'predictors/sales_predictor.dart';
 import 'predictors/financial_predictor.dart';
