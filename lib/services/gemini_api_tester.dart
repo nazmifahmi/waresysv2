@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class GeminiApiTester {
-  static const String _apiKey = 'AIzaSyCbUmbfANUx7rWGtRJAGtMosW6O6BfkKY0';
+  static const String _apiKey = 'AIzaSyC6rf7yigVEVtuk9gTwPQa1W-iBl3o8S_I';
   
   /// Test different API versions and models
   Future<String> runDiagnostics() async {

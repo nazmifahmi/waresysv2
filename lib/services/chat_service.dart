@@ -1,18 +1,62 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/chat_message_model.dart';
+import '../models/user_model.dart'; // <-- Impor model pengguna yang baru dibuat
+
+
+// Definisikan Tool/Function yang bisa digunakan oleh AI
+final _tools = [
+  {
+    'function_declarations': [
+      {
+        'name': 'getProductStock',
+        'description': 'Mendapatkan jumlah stok terkini untuk produk tertentu',
+        'parameters': {
+          'type': 'OBJECT',
+          'properties': {
+            'productName': {
+              'type': 'STRING',
+              'description': 'Nama produk yang ingin diperiksa stoknya'
+            }
+          },
+          'required': ['productName']
+        }
+      }
+    ]
+  }
+];
+
+// Fungsi dummy untuk mensimulasikan pengambilan data stok
+// Di aplikasi nyata, ini akan memanggil database atau API internal Anda
+int _getProductStock(String productName) {
+  debugPrint('📦 Checking stock for: $productName');
+  final lowerCaseProduct = productName.toLowerCase();
+  if (lowerCaseProduct.contains('baut')) {
+    return 150;
+  } else if (lowerCaseProduct.contains('mur')) {
+    return 300;
+  } else if (lowerCaseProduct.contains('paku')) {
+    return 1000;
+  }
+  return 0;
+}
 
 class ChatService {
-  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1/models';
-  static const String _apiKey = 'AIzaSyCbUmbfANUx7rWGtRJAGtMosW6O6BfkKY0'; // Gemini API key
+  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
+  static const String _apiKey = 'AIzaSyC6rf7yigVEVtuk9gTwPQa1W-iBl3o8S_I'; // Gemini API key
   
   // Singleton pattern
   static final ChatService _instance = ChatService._internal();
   factory ChatService() => _instance;
   ChatService._internal();
+
+  // Getter untuk memeriksa apakah API Key sudah diatur
+  bool get isApiKeyValid {
+    return _apiKey.isNotEmpty && _apiKey != 'AIzaSyC6rf7yigVEVtuk9gTwPQa1W-iBl3o8S_I';
+  }
 
   // Headers untuk API request
   Map<String, String> get _headers => {
@@ -48,7 +92,11 @@ class ChatService {
   }
 
   /// Mengirim pesan teks ke Gemini AI
-  Future<String> sendTextMessage(String message, {List<ChatMessage>? context}) async {
+  Future<String> sendTextMessage(
+    String message, {
+    List<ChatMessage>? context,
+    UserModel? user, // <-- Tambahkan parameter user
+  }) async {
     try {
       debugPrint('🤖 Sending text message to Gemini AI: $message');
       
@@ -75,7 +123,15 @@ class ChatService {
       });
 
       final requestBody = {
+        // Tambahkan System Instruction jika ada user
+        if (user != null)
+          'systemInstruction': {
+            'parts': [{
+              'text': 'Anda adalah asisten AI untuk WareSys, sebuah sistem ERP. Pengguna yang bertanya adalah ${user.name}, seorang ${user.role}. Berikan jawaban yang relevan dengan perannya dan sapa pengguna dengan namanya jika memungkinkan.'
+            }]
+          },
         'contents': contents,
+        'tools': _tools, // <-- Menambahkan daftar alat yang tersedia
         'generationConfig': {
           'temperature': 0.7,
           'topK': 40,
@@ -112,31 +168,81 @@ class ChatService {
         final data = jsonDecode(response.body);
         
         if (data['candidates'] != null && data['candidates'].isNotEmpty) {
-          final content = data['candidates'][0]['content']['parts'][0]['text'];
+          final candidate = data['candidates'][0];
+          final content = candidate['content'];
+
+          // Cek apakah AI ingin memanggil fungsi
+          if (content['parts'] != null && content['parts'][0]['functionCall'] != null) {
+            final functionCall = content['parts'][0]['functionCall'];
+            final functionName = functionCall['name'];
+            final args = functionCall['args'];
+
+            if (functionName == 'getProductStock') {
+              final productName = args['productName'];
+              final stock = _getProductStock(productName);
+
+              // Kirim hasil fungsi kembali ke AI
+              contents.add(content); // Tambahkan permintaan function call dari AI ke histori
+              contents.add({
+                'role': 'tool',
+                'parts': [
+                  {
+                    'functionResponse': {
+                      'name': 'getProductStock',
+                      'response': {'result': stock}
+                    }
+                  }
+                ]
+              });
+
+              // Panggil API lagi dengan hasil dari fungsi
+              final secondResponse = await _postWithRetry(
+                method: 'gemini-flash-latest:generateContent',
+                body: {'contents': contents, 'tools': _tools},
+                timeout: const Duration(seconds: 30),
+              );
+
+              if (secondResponse.statusCode == 200) {
+                final secondData = jsonDecode(secondResponse.body);
+                if (secondData['candidates'] != null && secondData['candidates'].isNotEmpty) {
+                  final textResponse = secondData['candidates'][0]['content']['parts'][0]['text'];
+                  debugPrint('✅ Received final response from Gemini AI after function call');
+                  return textResponse ?? 'Maaf, saya tidak dapat memberikan respons yang sesuai.';
+                }
+              }
+            }
+          }
+
+          // Jika tidak ada function call, kembalikan teks biasa
+          final text = candidate['content']['parts'][0]['text'];
           debugPrint('✅ Received response from Gemini AI');
-          return content ?? 'Maaf, saya tidak dapat memberikan respons yang sesuai.';
+          return text ?? 'Maaf, saya tidak dapat memberikan respons yang sesuai.';
         } else {
           throw Exception('No valid response from Gemini AI');
         }
       } else {
-        String serverMessage = response.body;
-        try {
-          final parsed = jsonDecode(response.body);
-          if (parsed is Map && parsed['error'] != null) {
-            serverMessage = parsed['error']['message']?.toString() ?? serverMessage;
-          }
-        } catch (_) {}
-        debugPrint('❌ Gemini AI API Error: ${response.statusCode} - $serverMessage');
-        throw Exception('API Error: ${response.statusCode}: $serverMessage');
+        final errorBody = jsonDecode(response.body);
+        throw Exception('Failed to connect to Gemini AI: ${response.statusCode} - ${errorBody['error']['message']}');
       }
+    } on SocketException {
+      debugPrint('🛑 SocketException: No Internet connection or host not reachable.');
+      return 'Maaf, koneksi internet Anda tampaknya terputus. Mohon periksa kembali koneksi Anda.';
+    } on TimeoutException {
+      debugPrint('🛑 TimeoutException: The request to Gemini AI timed out.');
+      return 'Maaf, server sedang sibuk atau merespons terlalu lama. Silakan coba lagi dalam beberapa saat.';
     } catch (e) {
-      debugPrint('❌ Error sending text message: $e');
+      debugPrint('🛑 An unexpected error occurred in sendTextMessage: $e');
+      // Fallback to keyword-based response if API fails
       return _getFallbackResponse(message);
     }
   }
 
-  /// Mengirim gambar ke Gemini AI untuk analisis
-  Future<String> sendImageMessage(String imagePath, {String? prompt}) async {
+  /// Mengirim gambar dan pesan teks (opsional) ke Gemini AI untuk analisis
+  Future<String> sendImageMessage(
+    String imagePath, {
+    String? prompt,
+    UserModel? user, // <-- Tambahkan parameter user
+  }) async {
     try {
       debugPrint('🖼️ Sending image to Gemini AI: $imagePath');
       
@@ -165,13 +271,19 @@ class ChatService {
           break;
       }
 
+      // Buat prompt dengan konteks pengguna
+      String finalPrompt = prompt ?? 'Analisis gambar ini dan berikan deskripsi yang detail. Jika ini adalah gambar yang berkaitan dengan bisnis atau inventori, berikan insight yang berguna.';
+      if (user != null) {
+        finalPrompt = 'Sebagai asisten untuk ${user.name} (${user.role}), ${finalPrompt.toLowerCase()}';
+      }
+
       final requestBody = {
         'contents': [
           {
             'role': 'user',
             'parts': [
               {
-                'text': prompt ?? 'Analisis gambar ini dan berikan deskripsi yang detail. Jika ini adalah gambar yang berkaitan dengan bisnis atau inventori, berikan insight yang berguna.'
+                'text': finalPrompt
               },
               {
                 'inline_data': {
@@ -207,55 +319,22 @@ class ChatService {
           throw Exception('No valid response from Gemini AI');
         }
       } else {
-        String serverMessage = response.body;
-        try {
-          final parsed = jsonDecode(response.body);
-          if (parsed is Map && parsed['error'] != null) {
-            serverMessage = parsed['error']['message']?.toString() ?? serverMessage;
-          }
-        } catch (_) {}
-        debugPrint('❌ Gemini AI API Error: ${response.statusCode} - $serverMessage');
-        throw Exception('API Error: ${response.statusCode}: $serverMessage');
+        final errorBody = jsonDecode(response.body);
+        throw Exception('Failed to connect to Gemini AI: ${response.statusCode} - ${errorBody['error']['message']}');
       }
+    } on SocketException {
+      debugPrint('🛑 SocketException: No Internet connection or host not reachable.');
+      return 'Maaf, koneksi internet Anda tampaknya terputus. Mohon periksa kembali koneksi Anda.';
+    } on TimeoutException {
+      debugPrint('🛑 TimeoutException: The request to Gemini AI timed out.');
+      return 'Maaf, server sedang sibuk atau merespons terlalu lama. Silakan coba lagi dalam beberapa saat.';
     } catch (e) {
-      debugPrint('❌ Error sending image message: $e');
-      return 'Maaf, saya tidak dapat menganalisis gambar saat ini. Silakan coba lagi nanti atau kirim pesan teks.';
+      debugPrint('🛑 An unexpected error occurred in sendImageMessage: $e');
+      return 'Maaf, saya gagal menganalisis gambar tersebut. Pastikan koneksi Anda stabil dan coba lagi.';
     }
   }
 
-  /// Mendapatkan respons fallback jika API gagal
-  String _getFallbackResponse(String message) {
-    final String lowerMessage = message.toLowerCase();
-    
-    // Respons berdasarkan kata kunci
-    if (lowerMessage.contains('halo') || lowerMessage.contains('hai') || lowerMessage.contains('hello')) {
-      return 'Halo! Saya adalah AI Assistant untuk WareSys. Bagaimana saya bisa membantu Anda hari ini?';
-    }
-    
-    if (lowerMessage.contains('inventory') || lowerMessage.contains('stok') || lowerMessage.contains('barang')) {
-      return 'Saya dapat membantu Anda dengan manajemen inventori. Anda bisa menanyakan tentang stok barang, prediksi kebutuhan, atau analisis pergerakan inventory.';
-    }
-    
-    if (lowerMessage.contains('keuangan') || lowerMessage.contains('finance') || lowerMessage.contains('laporan')) {
-      return 'Untuk masalah keuangan, saya bisa membantu menganalisis laporan keuangan, memberikan insight tentang cash flow, dan prediksi finansial.';
-    }
-    
-    if (lowerMessage.contains('transaksi') || lowerMessage.contains('penjualan') || lowerMessage.contains('pembelian')) {
-      return 'Saya dapat membantu menganalisis data transaksi, memberikan insight penjualan, dan membantu optimasi proses bisnis Anda.';
-    }
-    
-    if (lowerMessage.contains('bantuan') || lowerMessage.contains('help')) {
-      return 'Saya adalah AI Assistant untuk sistem ERP WareSys. Saya bisa membantu dengan:\n\n• Analisis data inventory\n• Insight keuangan\n• Analisis transaksi\n• Prediksi bisnis\n• Analisis gambar/dokumen\n\nSilakan tanyakan apa yang Anda butuhkan!';
-    }
-    
-    // Respons default
-    return 'Maaf, saya sedang mengalami gangguan koneksi. Silakan coba lagi dalam beberapa saat. Sementara itu, Anda bisa menggunakan fitur-fitur lain di aplikasi WareSys.';
-  }
-
-  /// Validasi API key
-  bool get isApiKeyValid => _apiKey != 'YOUR_GEMINI_API_KEY' && _apiKey.isNotEmpty;
-
-  /// Test koneksi ke Gemini AI
+  /// Memeriksa koneksi ke Gemini AI
   Future<bool> testConnection() async {
     try {
       if (!isApiKeyValid) {
@@ -263,11 +342,31 @@ class ChatService {
         return false;
       }
       
-      final response = await sendTextMessage('Hello');
-      return response.isNotEmpty;
+      // Gunakan GET request yang ringan untuk mengetes API key dan koneksi
+      final response = await http.get(Uri.parse('$_baseUrl?key=$_apiKey'));
+      
+      if (response.statusCode == 200) {
+        debugPrint('✅ Connection test successful');
+        return true;
+      } else {
+        debugPrint('❌ Connection test failed with status: ${response.statusCode}');
+        return false;
+      }
     } catch (e) {
-      debugPrint('❌ Connection test failed: $e');
+      debugPrint('❌ Connection test failed with error: $e');
       return false;
     }
+  }
+
+  // Respons fallback berbasis kata kunci jika API gagal
+  String _getFallbackResponse(String message) {
+    final lowerCaseMessage = message.toLowerCase();
+    if (lowerCaseMessage.contains('stok') || lowerCaseMessage.contains('inventori')) {
+      return 'Maaf, saya tidak dapat terhubung ke server untuk memeriksa data stok saat ini. Silakan coba lagi nanti.';
+    }
+    if (lowerCaseMessage.contains('bantuan') || lowerCaseMessage.contains('tolong')) {
+      return 'Maaf, saya sedang mengalami gangguan koneksi. Anda bisa mencoba bertanya lagi dalam beberapa saat.';
+    }
+    return 'Maaf, terjadi gangguan koneksi ke server AI. Mohon coba lagi beberapa saat lagi.';
   }
 }
