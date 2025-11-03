@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:speech_to_text/speech_to_text.dart';
+// import 'package:speech_to_text/speech_to_text.dart';  // <-- REMOVED due to compatibility issues
 import 'package:record/record.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -10,7 +10,7 @@ class VoiceService {
   factory VoiceService() => _instance;
   VoiceService._internal();
 
-  final SpeechToText _speechToText = SpeechToText();
+  // final SpeechToText _speechToText = SpeechToText();  // <-- REMOVED
   final AudioRecorder _audioRecorder = AudioRecorder();
   
   bool _isInitialized = false;
@@ -44,103 +44,101 @@ class VoiceService {
         return false;
       }
 
+      // NOTE: Speech-to-text functionality temporarily disabled due to Android Gradle Plugin compatibility issues
       // Initialize speech to text
-      _isInitialized = await _speechToText.initialize(
-        onError: (error) {
-          debugPrint('Speech recognition error: ${error.errorMsg}');
-          _stopListening();
-        },
-        onStatus: (status) {
-          debugPrint('Speech recognition status: $status');
-          if (status == 'done' || status == 'notListening') {
-            _stopListening();
-          }
-        },
-      );
+      // _isInitialized = await _speechToText.initialize(
+      //   onError: (error) {
+      //     debugPrint('Speech recognition error: ${error.errorMsg}');
+      //   },
+      //   onStatus: (status) {
+      //     debugPrint('Speech recognition status: $status');
+      //     _isListening = status == 'listening';
+      //     _listeningStreamController.add(_isListening);
+      //   },
+      // );
 
-      if (!_isInitialized) {
-        debugPrint('Failed to initialize speech recognition');
-        return false;
-      }
-
-      debugPrint('Voice service initialized successfully');
-      return true;
+      // For now, just mark as initialized for recording functionality
+      _isInitialized = true;
+      
+      debugPrint('Voice service initialized successfully (recording only)');
+      return _isInitialized;
     } catch (e) {
-      debugPrint('Error initializing voice service: $e');
+      debugPrint('Failed to initialize voice service: $e');
       return false;
     }
   }
 
-  /// Start listening for speech
+  /// Start listening for speech (currently disabled)
   Future<bool> startListening({
-    String localeId = 'id_ID', // Indonesian by default
-    Duration timeout = const Duration(seconds: 30),
+    Duration? listenFor,
+    Duration? pauseFor,
+    String? localeId,
   }) async {
     if (!_isInitialized) {
-      final initialized = await initialize();
-      if (!initialized) return false;
-    }
-
-    if (_isListening) {
-      debugPrint('Already listening');
-      return true;
-    }
-
-    try {
-      _recognizedText = '';
-      _isListening = true;
-      _listeningStreamController.add(true);
-
-      final available = await _speechToText.listen(
-        onResult: (result) {
-          _recognizedText = result.recognizedWords;
-          _textStreamController.add(_recognizedText);
-          
-          if (result.finalResult) {
-            _stopListening();
-          }
-        },
-        listenFor: timeout,
-        pauseFor: const Duration(seconds: 3),
-        partialResults: true,
-        localeId: localeId,
-        onSoundLevelChange: (level) {
-          _soundLevelStreamController.add(level);
-        },
-        cancelOnError: true,
-        listenMode: ListenMode.confirmation,
-      );
-
-      if (!available) {
-        _stopListening();
-        return false;
-      }
-
-      return true;
-    } catch (e) {
-      debugPrint('Error starting speech recognition: $e');
-      _stopListening();
+      debugPrint('Voice service not initialized');
       return false;
     }
+
+    // NOTE: Speech-to-text functionality temporarily disabled
+    debugPrint('Speech-to-text functionality is currently disabled due to compatibility issues');
+    return false;
+
+    // try {
+    //   final success = await _speechToText.listen(
+    //     onResult: (result) {
+    //       _recognizedText = result.recognizedWords;
+    //       _textStreamController.add(_recognizedText);
+    //       debugPrint('Recognized text: $_recognizedText');
+    //     },
+    //     listenFor: listenFor ?? const Duration(seconds: 30),
+    //     pauseFor: pauseFor ?? const Duration(seconds: 3),
+    //     partialResults: true,
+    //     onSoundLevelChange: (level) {
+    //       _soundLevelStreamController.add(level);
+    //     },
+    //     localeId: localeId,
+    //   );
+    //   
+    //   if (success) {
+    //     _isListening = true;
+    //     _listeningStreamController.add(_isListening);
+    //   }
+    //   
+    //   return success;
+    // } catch (e) {
+    //   debugPrint('Failed to start listening: $e');
+    //   return false;
+    // }
   }
 
   /// Stop listening for speech
   Future<void> stopListening() async {
-    await _stopListening();
-  }
-
-  Future<void> _stopListening() async {
     if (!_isListening) return;
 
     try {
-      await _speechToText.stop();
+      // await _speechToText.stop();  // <-- REMOVED
+      _isListening = false;
+      _listeningStreamController.add(_isListening);
+      debugPrint('Stopped listening');
     } catch (e) {
-      debugPrint('Error stopping speech recognition: $e');
+      debugPrint('Failed to stop listening: $e');
     }
+  }
 
-    _isListening = false;
-    _listeningStreamController.add(false);
-    _soundLevelStreamController.add(0.0);
+  /// Cancel listening for speech
+  Future<void> cancelListening() async {
+    if (!_isListening) return;
+
+    try {
+      // await _speechToText.cancel();  // <-- REMOVED
+      _isListening = false;
+      _recognizedText = '';
+      _listeningStreamController.add(_isListening);
+      _textStreamController.add(_recognizedText);
+      debugPrint('Cancelled listening');
+    } catch (e) {
+      debugPrint('Failed to cancel listening: $e');
+    }
   }
 
   /// Start recording audio to file
@@ -218,31 +216,48 @@ class VoiceService {
     }
   }
 
-  /// Get available locales for speech recognition
-  Future<List<LocaleName>> getAvailableLocales() async {
-    if (!_isInitialized) {
-      await initialize();
-    }
-    return _speechToText.locales();
+  /// Get available locales for speech recognition (currently disabled)
+  Future<List<String>> getAvailableLocales() async {
+    // NOTE: Speech-to-text functionality temporarily disabled
+    debugPrint('Speech-to-text functionality is currently disabled due to compatibility issues');
+    return [];
+    
+    // if (!_isInitialized) {
+    //   await initialize();
+    // }
+    // return _speechToText.locales();
   }
 
-  /// Check if speech recognition is available
+  /// Check if speech recognition is available (currently disabled)
   Future<bool> isAvailable() async {
-    return _speechToText.isAvailable;
+    // NOTE: Speech-to-text functionality temporarily disabled
+    debugPrint('Speech-to-text functionality is currently disabled due to compatibility issues');
+    return false;
+    
+    // return _speechToText.isAvailable;
   }
 
-  /// Cancel current speech recognition
+  /// Cancel current speech recognition (currently disabled)
   Future<void> cancel() async {
-    await _speechToText.cancel();
-    _stopListening();
+    // NOTE: Speech-to-text functionality temporarily disabled
+    debugPrint('Speech-to-text functionality is currently disabled due to compatibility issues');
+    
+    // await _speechToText.cancel();
+    // _stopListening();
   }
 
   /// Dispose resources
   void dispose() {
-    _stopListening();
+    // Stop any ongoing operations
+    if (_isListening) {
+      _isListening = false;
+      _listeningStreamController.add(false);
+    }
+    
     if (_isRecording) {
       stopRecording();
     }
+    
     _textStreamController.close();
     _listeningStreamController.close();
     _soundLevelStreamController.close();

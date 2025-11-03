@@ -3,9 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'firestore_service.dart';
+import 'firebase_messaging_handler.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -34,6 +36,13 @@ class AuthService {
         await _firestore.updateUser(userCredential.user!.uid, {
           'lastLogin': FieldValue.serverTimestamp(),
         });
+
+        // Store FCM token for push notifications
+        try {
+          await FirebaseMessagingHandler.storeFCMToken(userCredential.user!.uid);
+        } catch (e) {
+          debugPrint('Failed to store FCM token: $e');
+        }
 
         // Log activity with proper username
         await _firestore.logActivity(
@@ -74,10 +83,17 @@ class AuthService {
           'name': name,
           'company': company,
           'email': email,
-          'role': 'user', // Default role
+          'role': 'employee', // Default role
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         });
+
+        // Store FCM token for push notifications
+        try {
+          await FirebaseMessagingHandler.storeFCMToken(userCredential.user!.uid);
+        } catch (e) {
+          debugPrint('Failed to store FCM token during registration: $e');
+        }
 
         // Update user profile
         await userCredential.user!.updateDisplayName(name);
@@ -132,11 +148,11 @@ class AuthService {
       final user = _auth.currentUser;
       if (user != null) {
         final userData = await _firestore.getUser(user.uid);
-        return userData?['role'] ?? 'user';
+        return userData?['role'] ?? 'employee';
       }
-      return 'user';
+      return 'employee';
     } catch (e) {
-      return 'user';
+      return 'employee';
     }
   }
 
@@ -255,6 +271,13 @@ class AuthService {
           'provider': 'google',
         });
 
+        // Store FCM token for push notifications
+        try {
+          await FirebaseMessagingHandler.storeFCMToken(userCredential.user!.uid);
+        } catch (e) {
+          debugPrint('Failed to store FCM token during Google sign-in: $e');
+        }
+
         // Log activity
         await _firestore.logActivity(
           userId: userCredential.user!.uid,
@@ -309,6 +332,13 @@ class AuthService {
           'provider': 'apple',
         });
 
+        // Store FCM token for push notifications
+        try {
+          await FirebaseMessagingHandler.storeFCMToken(userCredential.user!.uid);
+        } catch (e) {
+          debugPrint('Failed to store FCM token during Apple sign-in: $e');
+        }
+
         // Log activity
         await _firestore.logActivity(
           userId: userCredential.user!.uid,
@@ -339,4 +369,4 @@ class AuthService {
     final digest = sha256.convert(bytes);
     return digest.toString();
   }
-} 
+}

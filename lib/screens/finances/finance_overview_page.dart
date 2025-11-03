@@ -42,26 +42,50 @@ class _FinanceOverviewPageState extends State<FinanceOverviewPage> {
   }
 
   Stream<List<_UnifiedTransaction>> _unifiedTransactionsStream() {
-    final manualStream = _service.getTransactionsStream();
-    final salesStream = _trxService.getTransactionsStream(type: TransactionType.sales)
-      .map((list) => list.where((t) => t.paymentStatus == PaymentStatus.paid).toList());
-    final purchaseStream = _trxService.getTransactionsStream(type: TransactionType.purchase)
-      .map((list) => list.where((t) => t.paymentStatus == PaymentStatus.paid).toList());
-    return Rx.combineLatest3<List<FinanceTransaction>, List<TransactionModel>, List<TransactionModel>, List<_UnifiedTransaction>>(
-      manualStream,
-      salesStream,
-      purchaseStream,
-      (manual, sales, purchase) {
-        final unified = <_UnifiedTransaction>[];
-        unified.addAll(manual
-          .where((t) => !t.id.startsWith('trx_'))
-          .map((t) => _UnifiedTransaction.fromFinance(t)));
-        unified.addAll(sales.map((t) => _UnifiedTransaction.fromSalesPurchase(t)));
-        unified.addAll(purchase.map((t) => _UnifiedTransaction.fromSalesPurchase(t)));
-        unified.sort((a, b) => b.date.compareTo(a.date));
-        return unified;
-      },
-    );
+    try {
+      final manualStream = _service.getTransactionsStream();
+      final salesStream = _trxService.getTransactionsStream(type: TransactionType.sales)
+        .map((list) => list.where((t) => t.paymentStatus == PaymentStatus.paid).toList());
+      final purchaseStream = _trxService.getTransactionsStream(type: TransactionType.purchase)
+        .map((list) => list.where((t) => t.paymentStatus == PaymentStatus.paid).toList());
+      
+      return Rx.combineLatest3<List<FinanceTransaction>, List<TransactionModel>, List<TransactionModel>, List<_UnifiedTransaction>>(
+        manualStream,
+        salesStream,
+        purchaseStream,
+        (manual, sales, purchase) {
+          try {
+            final unified = <_UnifiedTransaction>[];
+            
+            // Add manual transactions (filter out auto-generated ones)
+            unified.addAll(manual
+              .where((t) => !t.id.startsWith('trx_'))
+              .map((t) => _UnifiedTransaction.fromFinance(t)));
+            
+            // Add sales transactions
+            unified.addAll(sales.map((t) => _UnifiedTransaction.fromSalesPurchase(t)));
+            
+            // Add purchase transactions
+            unified.addAll(purchase.map((t) => _UnifiedTransaction.fromSalesPurchase(t)));
+            
+            // Sort by date (most recent first)
+            unified.sort((a, b) => b.date.compareTo(a.date));
+            
+            return unified;
+          } catch (e) {
+            debugPrint('Error processing unified transactions: $e');
+            return <_UnifiedTransaction>[];
+          }
+        },
+      ).handleError((error) {
+        debugPrint('Error in unified transactions stream: $error');
+        return <_UnifiedTransaction>[];
+      });
+    } catch (e) {
+      debugPrint('Error creating unified transactions stream: $e');
+      // Return empty stream in case of error
+      return Stream.value(<_UnifiedTransaction>[]);
+    }
   }
 
   @override
@@ -101,6 +125,29 @@ class _FinanceOverviewPageState extends State<FinanceOverviewPage> {
                         child: CommonWidgets.buildLoadingIndicator(),
                       );
                     }
+                    
+                    if (balanceSnap.hasError) {
+                      return Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.error_outline, color: AppTheme.errorColor, size: 48),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Error loading balance: ${balanceSnap.error}',
+                              style: AppTheme.bodyMedium.copyWith(color: AppTheme.errorColor),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            ElevatedButton(
+                              onPressed: () => setState(() {}),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    
                     final balance = balanceSnap.data ?? FinanceBalance(kasUtama: 0, bank: 0);
                     
                     return StreamBuilder<List<_UnifiedTransaction>>(
@@ -111,6 +158,29 @@ class _FinanceOverviewPageState extends State<FinanceOverviewPage> {
                             child: CommonWidgets.buildLoadingIndicator(),
                           );
                         }
+                        
+                        if (snap.hasError) {
+                          return Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.error_outline, color: AppTheme.errorColor, size: 48),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Error loading transactions: ${snap.error}',
+                                  style: AppTheme.bodyMedium.copyWith(color: AppTheme.errorColor),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                ElevatedButton(
+                                  onPressed: () => setState(() {}),
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        
                         final data = snap.data!;
                         final now = DateTime.now();
                         final bulanIni = data.where((trx) => trx.date.month == now.month && trx.date.year == now.year).toList();

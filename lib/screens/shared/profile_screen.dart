@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:waresys_fix1/services/auth_service.dart';
-import 'package:waresys_fix1/services/firestore_service.dart';
-import 'package:waresys_fix1/screens/home_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
+import '../../services/hrm/employee_repository.dart';
+import '../hrm/employee_profile_page.dart';
 import '../../constants/theme.dart';
 import '../../widgets/common_widgets.dart';
 
@@ -24,6 +26,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _authService = AuthService();
   final _firestoreService = FirestoreService();
+  final _employeeRepository = EmployeeRepository();
   bool _isLoading = false;
   bool _isEditing = false;
 
@@ -171,10 +174,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _buildEditForm(),
                     ] else ...[
                       _buildInfoRow('Name', _nameController.text),
-                       const SizedBox(height: AppTheme.spacingL),
-                       _buildInfoRow('Company', _companyController.text),
-                       const SizedBox(height: AppTheme.spacingXXL),
-                       _buildSignOutButton(),
+                      const SizedBox(height: AppTheme.spacingL),
+                      _buildInfoRow('Company', _companyController.text),
+                      const SizedBox(height: AppTheme.spacingL),
+                      _buildEmployeeProfileButton(),
+                      const SizedBox(height: AppTheme.spacingXXL),
+                      _buildSignOutButton(),
                     ],
                   ],
                 ),
@@ -272,6 +277,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmployeeProfileButton() {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spacingL),
+      decoration: AppTheme.cardDecoration,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Container(
+          padding: const EdgeInsets.all(AppTheme.spacingS),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryGreen.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(AppTheme.radiusS),
+          ),
+          child: Icon(
+            Icons.badge_outlined,
+            color: AppTheme.primaryGreen,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          'Employee Profile',
+          style: AppTheme.bodyLarge.copyWith(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        subtitle: Text(
+          'View detailed employee information',
+          style: AppTheme.bodySmall.copyWith(
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: AppTheme.textTertiary,
+        ),
+        onTap: () async {
+          try {
+            final user = await _authService.getCurrentUser();
+            if (user != null) {
+              // Get employee by user ID
+              final employees = await _employeeRepository.getAll();
+              final employee = employees.firstWhere(
+                (emp) => emp.userId == user.uid,
+                orElse: () => throw Exception('Employee profile not found'),
+              );
+              
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EmployeeProfilePage(
+                      employeeId: employee.employeeId,
+                    ),
+                  ),
+                );
+              }
+            }
+          } catch (e) {
+            if (mounted) {
+              CommonWidgets.showSnackBar(
+                context: context,
+                message: 'Employee profile not found. Please contact HR.',
+                type: SnackBarType.error,
+              );
+            }
+          }
+        },
       ),
     );
   }

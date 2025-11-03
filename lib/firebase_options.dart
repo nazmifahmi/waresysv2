@@ -42,7 +42,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyBdiCtUFRLyo_aOCQ7EthMkzxeoBKNjq5M',
-    appId: '1:323480284287:web:your_web_app_id',
+    appId: '1:323480284287:web:3a3f3c9632456a9698a34a',
     messagingSenderId: '323480284287',
     projectId: 'waresysv2',
     authDomain: 'waresysv2.firebaseapp.com',
@@ -59,7 +59,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCa50ZI87-wjBGOimQX7Am4HXstfVxIo00',
-    appId: '1:323480284287:ios:your_ios_app_id',
+    appId: '1:323480284287:ios:3a3f3c9632456a9698a34a',
     messagingSenderId: '323480284287',
     projectId: 'waresysv2',
     storageBucket: 'waresysv2.firebasestorage.app',
@@ -68,7 +68,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyCa50ZI87-wjBGOimQX7Am4HXstfVxIo00',
-    appId: '1:323480284287:ios:your_ios_app_id',
+    appId: '1:323480284287:ios:3a3f3c9632456a9698a34a',
     messagingSenderId: '323480284287',
     projectId: 'waresysv2',
     storageBucket: 'waresysv2.firebasestorage.app',
@@ -77,7 +77,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyBdiCtUFRLyo_aOCQ7EthMkzxeoBKNjq5M',
-    appId: '1:323480284287:web:your_web_app_id',
+    appId: '1:323480284287:web:3a3f3c9632456a9698a34a',
     messagingSenderId: '323480284287',
     projectId: 'waresysv2',
     authDomain: 'waresysv2.firebaseapp.com',

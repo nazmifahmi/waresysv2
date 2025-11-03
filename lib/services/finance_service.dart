@@ -281,82 +281,127 @@ class FinanceService {
 
   Future<void> cleanupFinanceData({required String userId, required String userName}) async {
     await _checkAdminAccess();
-    final batch = _firestore.batch();
     
-    // 1. Reset saldo ke 0
-    batch.set(_balanceDoc, {'kasUtama': 0.0, 'bank': 0.0});
-    
-    // 2. Hapus semua transaksi keuangan manual
-    final trxSnap = await _trxCol.get();
-    for (var doc in trxSnap.docs) {
-      batch.delete(doc.reference);
-    }
-    
-    // 3. Hapus semua log saldo
-    final logSnap = await _logCol.get();
-    for (var doc in logSnap.docs) {
-      batch.delete(doc.reference);
-    }
-
-    // 4. Hapus atau update transaksi sales/purchase yang mempengaruhi keuangan
-    final salesSnap = await _firestore.collection('transactions')
-      .where('type', isEqualTo: 'sales')
-      .where('paymentStatus', isEqualTo: 'paid')
-      .get();
-    
-    final purchaseSnap = await _firestore.collection('transactions')
-      .where('type', isEqualTo: 'purchase')
-      .where('paymentStatus', isEqualTo: 'paid')
-      .get();
-    
-    // Update status pembayaran menjadi unpaid untuk transaksi yang sudah paid
-    for (var doc in [...salesSnap.docs, ...purchaseSnap.docs]) {
-      batch.update(doc.reference, {
-        'paymentStatus': 'unpaid',
-        'updatedAt': Timestamp.now(),
-        'logHistory': FieldValue.arrayUnion([{
-          'action': 'update_status',
-          'userId': userId,
-          'userName': userName,
-          'timestamp': Timestamp.now(),
-          'note': 'Reset status pembayaran karena pembersihan data keuangan',
-        }]),
-      });
-    }
-    
-    // 5. Commit semua perubahan
-    await batch.commit();
-    
-    // 6. Buat log baru untuk reset data
-    await addBalanceLog(
-      FinanceBalanceLog(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        before: 0,
-        after: 0,
+    try {
+      // 1. Reset saldo ke 0 terlebih dahulu
+      await _balanceDoc.set({'kasUtama': 0.0, 'bank': 0.0});
+      
+      // 2. Hapus transaksi keuangan manual dalam batch kecil
+      final trxSnap = await _trxCol.get();
+      await _deleteBatchInChunks(trxSnap.docs, 'finance_transactions');
+      
+      // 3. Hapus log saldo dalam batch kecil
+      final logSnap = await _logCol.get();
+      await _deleteBatchInChunks(logSnap.docs, 'finance_logs');
+      
+      // 4. Update transaksi sales/purchase dalam batch kecil
+      final salesSnap = await _firestore.collection('transactions')
+        .where('type', isEqualTo: 'sales')
+        .where('paymentStatus', isEqualTo: 'paid')
+        .get();
+      
+      final purchaseSnap = await _firestore.collection('transactions')
+        .where('type', isEqualTo: 'purchase')
+        .where('paymentStatus', isEqualTo: 'paid')
+        .get();
+      
+      final allTransactions = [...salesSnap.docs, ...purchaseSnap.docs];
+      await _updateTransactionStatusInChunks(allTransactions, userId, userName);
+      
+      // 5. Buat log baru untuk reset data
+      await addBalanceLog(
+        FinanceBalanceLog(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          before: 0,
+          after: 0,
+          userId: userId,
+          userName: userName,
+          date: DateTime.now(),
+          note: 'Reset data keuangan',
+        ),
         userId: userId,
         userName: userName,
-        date: DateTime.now(),
-        note: 'Reset data keuangan',
-      ),
-      userId: userId,
-      userName: userName,
-      action: 'reset_data',
-      description: 'Reset seluruh data keuangan'
-    );
+        action: 'reset_data',
+        description: 'Reset seluruh data keuangan'
+      );
 
-    // 7. Log aktivitas global
-    await _firestoreService.logActivity(
-      userId: userId,
-      userName: userName,
-      type: 'finance',
-      action: 'cleanup_data',
-      description: 'Pembersihan data keuangan',
-      details: {
-        'manual_transactions_deleted': trxSnap.docs.length,
-        'logs_deleted': logSnap.docs.length,
-        'sales_reset': salesSnap.docs.length,
-        'purchases_reset': purchaseSnap.docs.length,
-      },
-    );
+      // 6. Log aktivitas global
+      await _firestoreService.logActivity(
+        userId: userId,
+        userName: userName,
+        type: 'finance',
+        action: 'cleanup_data',
+        description: 'Pembersihan data keuangan',
+        details: {
+          'manual_transactions_deleted': trxSnap.docs.length,
+          'logs_deleted': logSnap.docs.length,
+          'sales_reset': salesSnap.docs.length,
+          'purchases_reset': purchaseSnap.docs.length,
+        },
+      );
+    } catch (e) {
+      // Log error untuk debugging
+      await _firestoreService.logActivity(
+        userId: userId,
+        userName: userName,
+        type: 'finance',
+        action: 'cleanup_error',
+        description: 'Error saat pembersihan data keuangan: ${e.toString()}',
+        details: {'error': e.toString()},
+      );
+      rethrow;
+    }
   }
-} 
+
+  // Helper method untuk menghapus dokumen dalam batch kecil
+  Future<void> _deleteBatchInChunks(List<QueryDocumentSnapshot> docs, String collectionName) async {
+    const batchSize = 100; // Firestore batch limit is 500, we use 100 for safety
+    
+    for (int i = 0; i < docs.length; i += batchSize) {
+      final batch = _firestore.batch();
+      final chunk = docs.skip(i).take(batchSize);
+      
+      for (var doc in chunk) {
+        batch.delete(doc.reference);
+      }
+      
+      await batch.commit();
+      
+      // Small delay to prevent overwhelming Firestore
+      if (i + batchSize < docs.length) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+    }
+  }
+
+  // Helper method untuk update status transaksi dalam batch kecil
+  Future<void> _updateTransactionStatusInChunks(List<QueryDocumentSnapshot> docs, String userId, String userName) async {
+    const batchSize = 100;
+    
+    for (int i = 0; i < docs.length; i += batchSize) {
+      final batch = _firestore.batch();
+      final chunk = docs.skip(i).take(batchSize);
+      
+      for (var doc in chunk) {
+        batch.update(doc.reference, {
+          'paymentStatus': 'unpaid',
+          'updatedAt': Timestamp.now(),
+          'logHistory': FieldValue.arrayUnion([{
+            'action': 'update_status',
+            'userId': userId,
+            'userName': userName,
+            'timestamp': Timestamp.now(),
+            'note': 'Reset status pembayaran karena pembersihan data keuangan',
+          }]),
+        });
+      }
+      
+      await batch.commit();
+      
+      // Small delay to prevent overwhelming Firestore
+      if (i + batchSize < docs.length) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+    }
+  }
+}

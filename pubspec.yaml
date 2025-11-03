@@ -11,10 +11,10 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Firebase core (versi terbaru yang stabil)
+  # Firebase
   firebase_core: ^2.27.0
   firebase_auth: ^4.17.8
-  cloud_firestore: ^4.15.8
+  # cloud_firestore: ^4.15.8
   firebase_storage: ^11.6.9
   firebase_database: ^10.4.9
   firebase_messaging: ^14.7.19
@@ -28,6 +28,7 @@ dependencies:
 
   # State management & utils
   provider: ^6.1.2
+  flutter_riverpod: ^2.4.10
   flutter_bloc: ^8.1.4
   mobx: ^2.3.3+2
   flutter_mobx: ^2.2.1+1
@@ -90,9 +91,9 @@ dependencies:
   just_audio: ^0.9.36
   
   # Speech recognition & voice
-  speech_to_text: ^6.6.2
+  # speech_to_text: 5.2.0  # <-- REMOVED due to Android Gradle Plugin compatibility issues
   # flutter_sound: ^9.2.13  # <-- DIHAPUS karena menyebabkan error kompilasi
-  record: ^5.0.4
+  record: ^5.1.2
 
   # QR & barcode
   qr_flutter: ^4.1.0
@@ -154,6 +155,7 @@ dependency_overrides:
   # ffi: ^2.1.2
   # collection: ^1.18.0
   meta: ^1.11.0 # Override ini sering dibutuhkan untuk resolver
+  record_linux: ^1.0.0  # Override untuk mengatasi masalah kompatibilitas
 
 flutter:
   uses-material-design: true

@@ -21,9 +21,7 @@ class ClaimModel {
     required this.amount,
     this.receiptImageUrl,
     this.status = ClaimStatus.pending,
-  }) : assert(claimId.isNotEmpty),
-       assert(employeeId.isNotEmpty),
-       assert(claimType.isNotEmpty),
+  }) : assert(claimType.isNotEmpty),
        assert(description.isNotEmpty),
        assert(amount >= 0);
 

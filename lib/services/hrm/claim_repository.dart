@@ -1,10 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/hrm/claim_model.dart';
+import '../../models/hrm/employee_model.dart';
+import 'employee_repository.dart';
+import '../notification_service.dart';
 
 class ClaimRepository {
   final FirebaseFirestore _firestore;
+  final EmployeeRepository _employeeRepository;
+  final NotificationService _notificationService;
 
-  ClaimRepository({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
+  ClaimRepository({
+    FirebaseFirestore? firestore,
+    EmployeeRepository? employeeRepository,
+    NotificationService? notificationService,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+        _employeeRepository = employeeRepository ?? EmployeeRepository(),
+        _notificationService = notificationService ?? NotificationService();
 
   CollectionReference get _col => _firestore.collection('claims');
 
@@ -14,8 +25,32 @@ class ClaimRepository {
     return ref.id;
   }
 
-  Future<void> updateStatus(String claimId, ClaimStatus status) async {
+  Future<void> updateStatus(String claimId, ClaimStatus status, {String? approvedBy}) async {
+    final doc = await _col.doc(claimId).get();
+    if (!doc.exists) throw Exception('Claim not found');
+    
+    final claim = ClaimModel.fromDoc(doc);
+    
     await _col.doc(claimId).update({'status': status.name});
+    
+    // Send notification based on status
+    if (status == ClaimStatus.approved) {
+      await _notificationService.sendClaimApprovedNotification(
+        employeeId: claim.employeeId,
+        claimType: claim.claimType,
+        amount: claim.amount,
+        approvedBy: approvedBy ?? 'System',
+        claimId: claimId,
+      );
+    } else if (status == ClaimStatus.rejected) {
+      await _notificationService.sendClaimRejectedNotification(
+        employeeId: claim.employeeId,
+        claimType: claim.claimType,
+        amount: claim.amount,
+        rejectedBy: approvedBy ?? 'System',
+        claimId: claimId,
+      );
+    }
   }
 
   Stream<List<ClaimModel>> watchByEmployee(String employeeId) {

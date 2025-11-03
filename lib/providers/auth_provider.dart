@@ -39,6 +39,25 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> verifyPassword(String password) async {
+    try {
+      if (_user == null || _user!.email == null) {
+        return false;
+      }
+      
+      final credential = EmailAuthProvider.credential(
+        email: _user!.email!,
+        password: password,
+      );
+      
+      await _user!.reauthenticateWithCredential(credential);
+      return true;
+    } catch (e) {
+      print('Password verification failed: $e');
+      return false;
+    }
+  }
+
   Future<void> signOut() async {
     try {
       if (_user != null) {
@@ -63,5 +82,5 @@ class AuthProvider with ChangeNotifier {
       rethrow;
     }
   }
-} 
+}
  

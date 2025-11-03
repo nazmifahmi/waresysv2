@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum AttendanceStatus { present, late }
+enum AttendanceStatus { present, late, absent }
 
 class AttendanceModel {
   final String attendanceId;
@@ -9,7 +9,9 @@ class AttendanceModel {
   final DateTime? checkInTimestamp;
   final DateTime? checkOutTimestamp;
   final GeoPoint? checkInLocation;
+  final GeoPoint? checkOutLocation;
   final AttendanceStatus? status;
+  final int? workingHours; // in minutes
 
   AttendanceModel({
     required this.attendanceId,
@@ -18,9 +20,10 @@ class AttendanceModel {
     this.checkInTimestamp,
     this.checkOutTimestamp,
     this.checkInLocation,
+    this.checkOutLocation,
     this.status,
-  }) : assert(attendanceId.isNotEmpty, 'attendanceId cannot be empty'),
-       assert(employeeId.isNotEmpty, 'employeeId cannot be empty');
+    this.workingHours,
+  });
 
   Map<String, dynamic> toMap() => {
         'attendanceId': attendanceId,
@@ -29,7 +32,9 @@ class AttendanceModel {
         'checkInTimestamp': checkInTimestamp != null ? Timestamp.fromDate(checkInTimestamp!) : null,
         'checkOutTimestamp': checkOutTimestamp != null ? Timestamp.fromDate(checkOutTimestamp!) : null,
         'checkInLocation': checkInLocation,
+        'checkOutLocation': checkOutLocation,
         'status': status?.name,
+        'workingHours': workingHours,
       };
 
   factory AttendanceModel.fromMap(Map<String, dynamic> map) => AttendanceModel(
@@ -39,9 +44,11 @@ class AttendanceModel {
         checkInTimestamp: (map['checkInTimestamp'] as Timestamp?)?.toDate(),
         checkOutTimestamp: (map['checkOutTimestamp'] as Timestamp?)?.toDate(),
         checkInLocation: map['checkInLocation'],
+        checkOutLocation: map['checkOutLocation'],
         status: map['status'] != null
             ? AttendanceStatus.values.firstWhere((e) => e.name == map['status'])
             : null,
+        workingHours: map['workingHours'],
       );
 
   factory AttendanceModel.fromDoc(DocumentSnapshot doc) =>

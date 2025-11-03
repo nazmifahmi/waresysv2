@@ -50,4 +50,16 @@ class EmployeeRepository {
   Future<void> delete(String id) async {
     await _col.doc(id).delete();
   }
+
+  /// Get employee by Firebase Auth user ID
+  Future<EmployeeModel?> getByUserId(String userId) async {
+    try {
+      final snap = await _col.where('userId', isEqualTo: userId).limit(1).get();
+      if (snap.docs.isEmpty) return null;
+      return EmployeeModel.fromDoc(snap.docs.first);
+    } catch (e) {
+      print('Error getting employee by userId: $e');
+      return null;
+    }
+  }
 }

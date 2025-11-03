@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum EmployeeStatus { active, inactive }
+enum EmployeeRole { employee, manager, admin }
 
 class EmployeeModel {
   final String employeeId;
@@ -12,6 +13,8 @@ class EmployeeModel {
   final double salary;
   final String? contractUrl;
   final EmployeeStatus status;
+  final EmployeeRole role;
+  final int leaveBalance;
 
   EmployeeModel({
     required this.employeeId,
@@ -23,9 +26,9 @@ class EmployeeModel {
     required this.salary,
     this.contractUrl,
     this.status = EmployeeStatus.active,
-  }) : assert(employeeId.isNotEmpty, 'employeeId cannot be empty'),
-       assert(userId.isNotEmpty, 'userId cannot be empty'),
-       assert(fullName.isNotEmpty, 'fullName cannot be empty'),
+    this.role = EmployeeRole.employee,
+    this.leaveBalance = 12,
+  }) : assert(fullName.isNotEmpty, 'fullName cannot be empty'),
        assert(position.isNotEmpty, 'position cannot be empty'),
        assert(department.isNotEmpty, 'department cannot be empty'),
        assert(salary >= 0, 'salary must be >= 0');
@@ -40,6 +43,8 @@ class EmployeeModel {
         'salary': salary,
         'contractUrl': contractUrl,
         'status': status.name,
+        'role': role.name,
+        'leaveBalance': leaveBalance,
       };
 
   factory EmployeeModel.fromMap(Map<String, dynamic> map) => EmployeeModel(
@@ -55,6 +60,11 @@ class EmployeeModel {
           (e) => e.name == (map['status'] ?? EmployeeStatus.active.name),
           orElse: () => EmployeeStatus.active,
         ),
+        role: EmployeeRole.values.firstWhere(
+          (e) => e.name == (map['role'] ?? EmployeeRole.employee.name),
+          orElse: () => EmployeeRole.employee,
+        ),
+        leaveBalance: map['leaveBalance'] ?? 12,
       );
 
   factory EmployeeModel.fromDoc(DocumentSnapshot doc) =>

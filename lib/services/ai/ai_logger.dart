@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:firebase_core/firebase_core.dart';
 import '../firestore_service.dart';
 
 enum AILogLevel {
@@ -12,15 +13,32 @@ enum AILogLevel {
   critical
 }
 
+/// Logger untuk mencatat aktivitas AI Service
 class AILogger {
   static final AILogger _instance = AILogger._internal();
   factory AILogger() => _instance;
-  
-  final FirestoreService _firestoreService = FirestoreService();
-  final CollectionReference _logsCollection = FirebaseFirestore.instance.collection('ai_logs');
-  bool _firestoreAvailable = true;
-  
+
   AILogger._internal();
+
+  final List<Map<String, dynamic>> _localLogs = [];
+  final int _maxLocalLogs = 100;
+
+  // Lazy initialization untuk Firebase services
+  FirestoreService? _firestoreService;
+  CollectionReference? _logsCollection;
+  bool _firestoreAvailable = true;
+
+  FirestoreService get firestoreService {
+    _firestoreService ??= FirestoreService();
+    return _firestoreService!;
+  }
+
+  CollectionReference get logsCollection {
+    if (_logsCollection == null && Firebase.apps.isNotEmpty) {
+      _logsCollection = FirebaseFirestore.instance.collection('ai_logs');
+    }
+    return _logsCollection!;
+  }
 
   Future<void> log({
     required String component,
@@ -57,11 +75,11 @@ class AILogger {
     }
 
     // Try to store in Firestore if available
-    if (_firestoreAvailable) {
+    if (_firestoreAvailable && Firebase.apps.isNotEmpty) {
       try {
         final firestoreEntry = Map<String, dynamic>.from(logEntry);
         firestoreEntry['timestamp'] = FieldValue.serverTimestamp();
-        await _logsCollection.add(firestoreEntry);
+        await logsCollection.add(firestoreEntry);
       } catch (e) {
         // Check if it's a permission error
         if (e.toString().contains('permission-denied')) {
@@ -151,14 +169,18 @@ class AILogger {
     );
   }
 
-  Future<List<Map<String, dynamic>>> getRecentLogs({
-    int limit = 100,
+  Future<List<Map<String, dynamic>>> getLogs({
+    int limit = 50,
     AILogLevel? minLevel,
     String? component,
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    Query query = _logsCollection.orderBy('timestamp', descending: true);
+    if (Firebase.apps.isEmpty) {
+      return _localLogs.take(limit).toList();
+    }
+    
+    Query query = logsCollection.orderBy('timestamp', descending: true);
 
     if (minLevel != null) {
       query = query.where('level', whereIn: AILogLevel.values
@@ -181,15 +203,32 @@ class AILogger {
 
     query = query.limit(limit);
 
-    final snapshot = await query.get();
-    return snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+    try {
+      final snapshot = await query.get();
+      return snapshot.docs.map((doc) => {
+        'id': doc.id,
+        ...doc.data() as Map<String, dynamic>,
+      }).toList();
+    } catch (e) {
+      debugPrint('Failed to get logs from Firestore: $e');
+      return _localLogs.take(limit).toList();
+    }
   }
 
   Future<Map<String, dynamic>> getErrorStats({
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    Query query = _logsCollection.where('level', isEqualTo: AILogLevel.error.toString());
+    if (Firebase.apps.isEmpty) {
+      final errorLogs = _localLogs.where((log) => log['level'] == AILogLevel.error.toString()).toList();
+      return {
+        'total_errors': errorLogs.length,
+        'errors_by_component': <String, int>{},
+        'recent_errors': errorLogs.take(10).toList(),
+      };
+    }
+    
+    Query query = logsCollection.where('level', isEqualTo: AILogLevel.error.toString());
 
     if (startDate != null) {
       query = query.where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));

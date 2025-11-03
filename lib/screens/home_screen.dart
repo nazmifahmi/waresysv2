@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'monitoring/monitor_screen.dart';
+import '../providers/auth_provider.dart';
+import '../providers/theme_provider.dart';
+import '../providers/news_provider.dart';
+import '../constants/theme.dart';
+import '../widgets/news_section.dart';
+import '../widgets/ai_insight_card.dart';
+import '../widgets/common_widgets.dart';
+import '../widgets/floating_chat_bubble.dart';
+import '../utils/role_utils.dart';
+import '../services/auth_service.dart';
+import 'hrm/hrm_home_page.dart';
+import 'crm/crm_home_page.dart'; // CRM rebuilt and ready
+import 'logistics/logistics_home_page.dart';
+import 'admin_home_screen.dart';
 import 'shared/profile_screen.dart';
+import 'monitoring/monitor_screen.dart';
 import 'finances/finance_screen.dart';
 import 'inventory/inventory_screen.dart';
 import 'transaction/transaction_screen.dart';
-import 'hrm/hrm_home_page.dart';
-import 'crm/crm_home_page.dart';
-import 'logistics/logistics_home_page.dart';
-import '../services/auth_service.dart';
-import '../widgets/news_section.dart';
-import '../providers/news_provider.dart';
-import '../widgets/floating_chat_bubble.dart';
-import '../constants/theme.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -80,10 +86,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _navigateToCRM(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CRMHomePage()),
-    );
+    print('🔍 DEBUG: CRM navigation button clicked');
+    try {
+      print('🔍 DEBUG: Attempting to navigate to CRM...');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const CRMHomePage()),
+      );
+      print('🔍 DEBUG: CRM navigation successful');
+    } catch (e) {
+      print('❌ DEBUG: CRM navigation failed: $e');
+    }
   }
 
   void _navigateToLogistics(BuildContext context) {
@@ -310,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(width: AppTheme.spacingM),
-                    const Expanded(child: SizedBox()), // Empty space for alignment
+                    const Expanded(child: SizedBox()), // Empty space instead of Admin Setup
                   ],
                 ),
               ],

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as provider;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 
 // Import Provider baru kita
 import 'package:waresys_fix1/providers/ai_provider.dart';
 import 'package:waresys_fix1/providers/chat_provider.dart';
+import 'package:waresys_fix1/services/notification_service.dart';
+import 'package:waresys_fix1/services/firebase_messaging_handler.dart';
 
 import 'package:waresys_fix1/providers/auth_provider.dart';
 import 'package:waresys_fix1/providers/transaction_provider.dart';
@@ -29,9 +33,13 @@ import 'package:waresys_fix1/constants/theme.dart';
 import 'package:waresys_fix1/services/ai/ai_service_test.dart';
 import 'package:waresys_fix1/services/firestore_connection_service.dart';
 import 'package:waresys_fix1/utils/performance_optimizer.dart';
+import 'package:waresys_fix1/utils/run_migration.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize locale data for date formatting
+  await initializeDateFormatting();
   
   // Inisialisasi Firebase dengan timeout dan error handling
   bool firebaseInitialized = false;
@@ -45,24 +53,34 @@ void main() async {
     // Inisialisasi FirestoreConnectionService setelah Firebase berhasil
      await FirestoreConnectionService().initialize();
      debugPrint('✅ FirestoreConnectionService initialized successfully');
+     
+    // Inisialisasi Firebase Messaging untuk push notifications
+     try {
+       await FirebaseMessagingHandler.initialize();
+       debugPrint('✅ Firebase Messaging initialized successfully');
+     } catch (e) {
+       debugPrint('⚠️ Firebase Messaging initialization failed: $e');
+     }
   } catch (e) {
     debugPrint('⚠️ Firebase initialization failed: $e');
     debugPrint('📱 Continuing with offline mode...');
   }
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => TransactionProvider()),
-        ChangeNotifierProvider(create: (_) => InventoryProvider()),
-        // Daftarkan AIProvider kita di sini
-        ChangeNotifierProvider(create: (_) => AIProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
-        ChangeNotifierProvider(create: (_) => NewsProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-      ],
-      child: const MyApp(),
+    ProviderScope(
+      child: provider.MultiProvider(
+        providers: [
+          provider.ChangeNotifierProvider(create: (_) => AuthProvider()),
+          provider.ChangeNotifierProvider(create: (_) => TransactionProvider()),
+          provider.ChangeNotifierProvider(create: (_) => InventoryProvider()),
+          // Daftarkan AIProvider kita di sini
+          provider.ChangeNotifierProvider(create: (_) => AIProvider()),
+          provider.ChangeNotifierProvider(create: (_) => ChatProvider()),
+          provider.ChangeNotifierProvider(create: (_) => NewsProvider()),
+          provider.ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ],
+        child: const MyApp(),
+      ),
     ),
   );
 }
@@ -72,7 +90,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
+    return provider.Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return MaterialApp(
           title: 'WareSys',
@@ -128,21 +146,28 @@ class _SplashScreenState extends State<SplashScreen> {
       
       // Panggil inisialisasi AI dari AIProvider dengan timeout
       try {
-        await Provider.of<AIProvider>(context, listen: false).initialize()
+        await provider.Provider.of<AIProvider>(context, listen: false).initialize()
             .timeout(const Duration(seconds: 15));
       } catch (e) {
         debugPrint('⚠️ AI initialization failed: $e');
       }
       
-      // Run AI Service tests in debug mode dengan timeout
-      if (kDebugMode) {
-        try {
-          await compute(aiTester, null)
-              .timeout(const Duration(seconds: 10));
-        } catch (e) {
-          debugPrint('⚠️ AI testing failed: $e');
-        }
+      // Run user role migration (one-time operation)
+      try {
+        await MigrationRunner.runMigrationSilently();
+      } catch (e) {
+        debugPrint('⚠️ User role migration failed: $e');
       }
+      
+      // Run AI Service tests in debug mode dengan timeout (disabled untuk mengatasi hot reload lambat)
+      // if (kDebugMode) {
+      //   try {
+      //     await compute(aiTester, null)
+      //         .timeout(const Duration(seconds: 10));
+      //   } catch (e) {
+      //     debugPrint('⚠️ AI testing failed: $e');
+      //   }
+      // }
       
       PerformanceMetrics.stopTimer('app_initialization');
 

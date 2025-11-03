@@ -69,7 +69,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       });
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/admin');
       }
     } on FirebaseAuthException catch (e) {
       setState(() {

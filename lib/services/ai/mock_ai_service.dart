@@ -82,6 +82,7 @@ class MockAIService {
     } catch (e) {
       print('Error dalam mock prediksi stok: $e');
       return {
+        'product_id': productId,
         'error': e.toString(),
         'is_mock': true,
       };

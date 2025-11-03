@@ -60,4 +60,21 @@ class FleetRepository {
   Future<void> delete(String id) async {
     await _fleets.doc(id).delete();
   }
+
+  // Fleet tracking methods
+  Stream<GeoPoint?> updateVehicleLocationStream(String routeId) {
+    return _fleets.doc(routeId).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      final data = doc.data();
+      if (data == null || !data.containsKey('currentLocation')) return null;
+      return data['currentLocation'] as GeoPoint?;
+    });
+  }
+
+  Future<void> setVehicleLocation(String routeId, GeoPoint location) async {
+    await _fleets.doc(routeId).update({
+      'currentLocation': location,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    });
+  }
 }

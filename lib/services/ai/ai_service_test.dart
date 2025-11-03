@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'mock_ai_service.dart';
 import 'ai_service.dart';
 
@@ -6,6 +7,12 @@ import 'ai_service.dart';
 class AIServiceTest {
   static Future<void> runTests() async {
     debugPrint('🧪 Starting AI Service Tests...');
+    
+    // Check if Firebase is initialized before running tests
+    if (Firebase.apps.isEmpty) {
+      debugPrint('⚠️ Firebase not initialized. Skipping AI Service tests that require Firebase.');
+      return;
+    }
     
     try {
       await _testMockAIService();
@@ -120,6 +127,12 @@ class AIServiceTest {
   /// Performance test
   static Future<void> performanceTest() async {
     debugPrint('⚡ Running AI Service Performance Test...');
+    
+    // Check if Firebase is initialized before running performance test
+    if (Firebase.apps.isEmpty) {
+      debugPrint('⚠️ Firebase not initialized. Skipping AI Service performance test.');
+      return;
+    }
     
     final mockService = MockAIService();
     await mockService.initialize();

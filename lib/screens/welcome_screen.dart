@@ -191,6 +191,7 @@ class WelcomeScreen extends StatelessWidget {
                               text: 'Daftar',
                               onPressed: () {
                                 // Navigate to register
+                                Navigator.pushNamed(context, '/register');
                               },
                               width: double.infinity,
                               icon: Icons.person_add,
