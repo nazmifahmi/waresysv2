@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
+import '../../widgets/common_widgets.dart';
 import '../../models/logistics/fleet_vehicle_model.dart';
 import '../../services/logistics/fleet_repository.dart';
 import 'fleet_form_page.dart';
@@ -24,32 +25,44 @@ class _FleetMapPageState extends State<FleetMapPage> {
   }
 
   Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return Colors.green;
-      case 'maintenance':
-        return Colors.orange;
-      case 'inactive':
-        return Colors.red;
+    // Konsisten dengan enum VehicleStatus: AVAILABLE, ON_DUTY, MAINTENANCE
+    switch (status.toUpperCase()) {
+      case 'AVAILABLE':
+        return AppTheme.successColor;
+      case 'ON_DUTY':
+        return AppTheme.infoColor;
+      case 'MAINTENANCE':
+        return AppTheme.warningColor;
       default:
-        return Colors.grey;
+        return AppTheme.textTertiary;
+    }
+  }
+
+  String _statusLabel(String status) {
+    switch (status.toUpperCase()) {
+      case 'AVAILABLE':
+        return 'Available';
+      case 'ON_DUTY':
+        return 'On Duty';
+      case 'MAINTENANCE':
+        return 'Maintenance';
+      default:
+        return status;
     }
   }
 
   Widget _statusChip(String status) {
+    final color = _getStatusColor(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: _getStatusColor(status).withOpacity(0.2),
+        color: color.withOpacity(0.18),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.6)),
       ),
       child: Text(
-        status.toUpperCase(),
-        style: TextStyle(
-          color: _getStatusColor(status),
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
+        _statusLabel(status),
+        style: AppTheme.labelSmall.copyWith(color: AppTheme.textPrimary),
       ),
     );
   }
@@ -57,11 +70,12 @@ class _FleetMapPageState extends State<FleetMapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manajemen Armada'),
+      backgroundColor: AppTheme.backgroundDark,
+      appBar: CommonWidgets.buildAppBar(
+        title: 'Manajemen Armada',
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add, color: AppTheme.textPrimary),
             onPressed: () => _openForm(),
           ),
         ],
@@ -69,19 +83,18 @@ class _FleetMapPageState extends State<FleetMapPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: TextField(
+            padding: const EdgeInsets.all(AppTheme.spacingL),
+            child: CommonWidgets.buildTextField(
+              label: 'Cari kendaraan',
+              hint: 'Nomor kendaraan / driver',
               controller: _searchCtrl,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: 'Cari kendaraan...',
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchCtrl.clear();
-                    setState(() {});
-                  },
-                ),
+              prefixIcon: Icons.search,
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.clear, color: AppTheme.textSecondary),
+                onPressed: () {
+                  _searchCtrl.clear();
+                  setState(() {});
+                },
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -96,28 +109,36 @@ class _FleetMapPageState extends State<FleetMapPage> {
                 
                 final list = snapshot.data ?? [];
                 if (list.isEmpty) {
-                  return const Center(child: Text('Belum ada data armada.'));
+                  return Center(child: Text('Belum ada data armada.', style: AppTheme.bodyMedium));
                 }
                 
                 return ListView.builder(
                   itemCount: list.length,
                   itemBuilder: (context, i) {
                     final fleet = list[i];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    return CommonWidgets.buildCard(
+                      padding: const EdgeInsets.all(AppTheme.spacingM),
                       child: ListTile(
-                        title: Text('${fleet.vehicleNumber}'),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Driver: ${fleet.driverName}'),
-                            Text('Capacity: ${fleet.capacity} kg'),
-                            if (fleet.lastServiceDate != null)
-                              Text('Last Service: ${fleet.lastServiceDate!.day}/${fleet.lastServiceDate!.month}/${fleet.lastServiceDate!.year}'),
-                          ],
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(fleet.vehicleNumber, style: AppTheme.heading4),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: AppTheme.spacingXS),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Driver: ${fleet.driverName}', style: AppTheme.bodySmall),
+                              Text('Capacity: ${fleet.capacity} kg', style: AppTheme.bodySmall),
+                              if (fleet.lastServiceDate != null)
+                                Text(
+                                  'Last Service: ${fleet.lastServiceDate!.day}/${fleet.lastServiceDate!.month}/${fleet.lastServiceDate!.year}',
+                                  style: AppTheme.bodySmall,
+                                ),
+                            ],
+                          ),
                         ),
                         leading: _statusChip(fleet.status.name),
                         trailing: PopupMenuButton<String>(
+                          color: AppTheme.surfaceDark,
                           onSelected: (value) async {
                             if (value == 'edit') {
                               _openForm(fleet: fleet);
@@ -146,7 +167,7 @@ class _FleetMapPageState extends State<FleetMapPage> {
                             } else if (value.startsWith('status_')) {
                               final newStatusString = value.replaceFirst('status_', '');
                               final newStatus = VehicleStatus.values.firstWhere(
-                                (status) => status.name.toLowerCase() == newStatusString.toLowerCase(),
+                                (status) => status.name == newStatusString,
                                 orElse: () => VehicleStatus.AVAILABLE,
                               );
                               final updatedFleet = FleetModel(
@@ -162,12 +183,12 @@ class _FleetMapPageState extends State<FleetMapPage> {
                               setState(() {});
                             }
                           },
-                          itemBuilder: (_) => [
-                            const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                            const PopupMenuItem(value: 'delete', child: Text('Hapus')),
-                            const PopupMenuItem(value: 'status_active', child: Text('Set Active')),
-                            const PopupMenuItem(value: 'status_maintenance', child: Text('Set Maintenance')),
-                            const PopupMenuItem(value: 'status_inactive', child: Text('Set Inactive')),
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(value: 'edit', child: Text('Edit')),
+                            PopupMenuItem(value: 'delete', child: Text('Hapus')),
+                            PopupMenuItem(value: 'status_AVAILABLE', child: Text('Set Available')),
+                            PopupMenuItem(value: 'status_ON_DUTY', child: Text('Set On Duty')),
+                            PopupMenuItem(value: 'status_MAINTENANCE', child: Text('Set Maintenance')),
                           ],
                         ),
                         onTap: () => _openForm(fleet: fleet),

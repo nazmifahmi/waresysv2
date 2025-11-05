@@ -4,6 +4,7 @@ import '../../models/crm/opportunity_model.dart';
 import '../../providers/crm/opportunity_provider.dart';
 import '../../constants/theme.dart';
 import 'opportunity_form_page.dart';
+import '../../widgets/common_widgets.dart';
 
 class OpportunityDetailPage extends ConsumerWidget {
   final OpportunityModel opportunity;
@@ -16,21 +17,15 @@ class OpportunityDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryGreen,
-        title: Text(
-          'Detail Opportunity',
-          style: AppTheme.heading4.copyWith(color: Colors.white),
-        ),
-        foregroundColor: Colors.white,
+      backgroundColor: AppTheme.backgroundDark,
+      appBar: CommonWidgets.buildAppBar(
+        title: 'Detail Opportunity',
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () => _editOpportunity(context),
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
             onSelected: (value) {
               switch (value) {
                 case 'move_stage':
@@ -94,387 +89,218 @@ class OpportunityDetailPage extends ConsumerWidget {
   }
 
   Widget _buildHeaderCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: _getPriorityColor(opportunity.priority),
-                  child: Text(
-                    opportunity.name.isNotEmpty ? opportunity.name[0].toUpperCase() : 'O',
-                    style: AppTheme.heading3.copyWith(
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                SizedBox(width: AppTheme.spacingL),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        opportunity.name,
-                        style: AppTheme.heading3.copyWith(
-                          color: AppTheme.textPrimaryLight,
-                        ),
-                      ),
-                      if (opportunity.description != null)
-                        Text(
-                          opportunity.description!,
-                          style: AppTheme.bodyMedium.copyWith(
-                            color: AppTheme.textSecondaryLight,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      SizedBox(height: AppTheme.spacingS),
-                      Row(
-                        children: [
-                          _buildStageChip(opportunity.stage),
-                          SizedBox(width: AppTheme.spacingS),
-                          _buildPriorityChip(opportunity.priority),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
+    return CommonWidgets.buildDetailHeader(
+      title: opportunity.name,
+      subtitle: opportunity.description,
+      avatarColor: _getPriorityColor(opportunity.priority),
+      chips: [
+        CommonWidgets.buildChip(
+          text: _getStageLabel(opportunity.stage),
+          color: _getStageColor(opportunity.stage),
+          icon: Icons.timeline,
         ),
-      ),
+        CommonWidgets.buildChip(
+          text: _getPriorityLabel(opportunity.priority),
+          color: _getPriorityColor(opportunity.priority),
+          icon: Icons.priority_high,
+        ),
+      ],
     );
   }
 
   Widget _buildProgressCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Progress Pipeline',
-                  style: AppTheme.heading4.copyWith(
-                    color: AppTheme.primaryGreen,
-                  ),
-                ),
-                Text(
-                  '${(opportunity.stageProgress * 100).toInt()}%',
-                  style: AppTheme.labelLarge.copyWith(
-                    color: AppTheme.primaryGreen,
-                  ),
-                ),
-              ],
+    return CommonWidgets.buildSectionCard(
+      title: 'Progress Pipeline',
+      trailing: Text(
+        '${(opportunity.stageProgress * 100).toInt()}%',
+        style: AppTheme.labelLarge.copyWith(color: AppTheme.primaryGreen),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LinearProgressIndicator(
+            value: opportunity.stageProgress,
+            backgroundColor: AppTheme.borderLight,
+            valueColor: AlwaysStoppedAnimation<Color>(
+              opportunity.isClosed
+                  ? (opportunity.isWon ? AppTheme.successColor : AppTheme.errorColor)
+                  : AppTheme.primaryGreen,
             ),
-            SizedBox(height: AppTheme.spacingL),
-            LinearProgressIndicator(
-              value: opportunity.stageProgress,
-              backgroundColor: AppTheme.borderLight,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                opportunity.isClosed 
-                    ? (opportunity.isWon ? AppTheme.successColor : AppTheme.errorColor)
-                    : AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildInfoItem('Tipe', _getTypeLabel(opportunity.type)),
-                ),
-                Expanded(
-                  child: _buildInfoItem('Prioritas', _getPriorityLabel(opportunity.priority)),
-                ),
-              ],
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildInfoItem('Currency', opportunity.currency),
-                ),
-                Expanded(
-                  child: _buildInfoItem('Sales Cycle', '${opportunity.salesCycle} hari'),
-                ),
-              ],
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            _buildInfoItem(
-              'Dibuat',
-              _formatDate(opportunity.createdAt),
-            ),
-          ],
-        ),
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          Row(
+            children: [
+              Expanded(child: _buildInfoItem('Tipe', _getTypeLabel(opportunity.type))),
+              Expanded(child: _buildInfoItem('Prioritas', _getPriorityLabel(opportunity.priority))),
+            ],
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          Row(
+            children: [
+              Expanded(child: _buildInfoItem('Currency', opportunity.currency)),
+              Expanded(child: _buildInfoItem('Sales Cycle', '${opportunity.salesCycle} hari')),
+            ],
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          _buildInfoItem('Dibuat', _formatDate(opportunity.createdAt)),
+        ],
       ),
     );
   }
 
   Widget _buildValueCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Nilai & Estimasi',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
+    return CommonWidgets.buildSectionCard(
+      title: 'Nilai & Estimasi',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: AppTheme.spacingS),
+                  child: _buildStatItem(
+                    'Nilai Opportunity',
+                    'Rp ${opportunity.amount.toStringAsFixed(0)}',
+                    Icons.attach_money,
+                    AppTheme.successColor,
+                  ),
+                ),
               ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(right: AppTheme.spacingS),
-                    child: _buildStatItem(
-                      'Nilai Opportunity',
-                      'Rp ${opportunity.amount.toStringAsFixed(0)}',
-                      Icons.attach_money,
-                      AppTheme.successColor,
-                    ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(left: AppTheme.spacingS),
+                  child: _buildStatItem(
+                    'Weighted Value',
+                    'Rp ${opportunity.weightedValue.toStringAsFixed(0)}',
+                    Icons.trending_up,
+                    AppTheme.accentBlue,
                   ),
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(left: AppTheme.spacingS),
-                    child: _buildStatItem(
-                      'Weighted Value',
-                      'Rp ${opportunity.weightedValue.toStringAsFixed(0)}',
-                      Icons.trending_up,
-                      AppTheme.accentBlue,
-                    ),
-                  ),
+              ),
+            ],
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          Row(
+            children: [
+              Expanded(child: _buildInfoItem('Perkiraan Closing', _formatDate(opportunity.expectedCloseDate))),
+              Expanded(
+                child: _buildInfoItem(
+                  'Hari ke Closing',
+                  opportunity.daysToClose > 0
+                      ? '${opportunity.daysToClose} hari'
+                      : (opportunity.isOverdue ? 'Overdue' : 'Hari ini'),
                 ),
-              ],
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildInfoItem(
-                    'Perkiraan Closing',
-                    _formatDate(opportunity.expectedCloseDate),
-                  ),
-                ),
-                Expanded(
-                  child: _buildInfoItem(
-                    'Hari ke Closing',
-                    opportunity.daysToClose > 0 
-                        ? '${opportunity.daysToClose} hari'
-                        : (opportunity.isOverdue ? 'Overdue' : 'Hari ini'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildDetailsCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Detail Opportunity',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildInfoItem('Tipe', _getTypeLabel(opportunity.type)),
-                ),
-                Expanded(
-                  child: _buildInfoItem('Prioritas', _getPriorityLabel(opportunity.priority)),
-                ),
-              ],
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildInfoItem('Currency', opportunity.currency),
-                ),
-                Expanded(
-                  child: _buildInfoItem('Sales Cycle', '${opportunity.salesCycle} hari'),
-                ),
-              ],
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            _buildInfoItem(
-              'Dibuat',
-              _formatDate(opportunity.createdAt),
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Detail Opportunity',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: _buildInfoItem('Tipe', _getTypeLabel(opportunity.type))),
+              Expanded(child: _buildInfoItem('Prioritas', _getPriorityLabel(opportunity.priority))),
+            ],
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          Row(
+            children: [
+              Expanded(child: _buildInfoItem('Currency', opportunity.currency)),
+              Expanded(child: _buildInfoItem('Sales Cycle', '${opportunity.salesCycle} hari')),
+            ],
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          _buildInfoItem('Dibuat', _formatDate(opportunity.createdAt)),
+        ],
       ),
     );
   }
 
   Widget _buildRelationshipsCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Relasi',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            if (opportunity.customerId != null)
-              _buildInfoRow(Icons.person, 'Customer ID', opportunity.customerId!),
-            if (opportunity.contactId != null) ...[
-              SizedBox(height: AppTheme.spacingM),
-              _buildInfoRow(Icons.contact_phone, 'Contact ID', opportunity.contactId!),
-            ],
+    return CommonWidgets.buildSectionCard(
+      title: 'Relasi',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (opportunity.customerId != null)
+            _buildInfoRow(Icons.person, 'Customer ID', opportunity.customerId!),
+          if (opportunity.contactId != null) ...[
             SizedBox(height: AppTheme.spacingM),
-            _buildInfoRow(Icons.person_outline, 'Assigned To', opportunity.assignedTo),
-            if (opportunity.stakeholders.isNotEmpty) ...[
-              SizedBox(height: AppTheme.spacingM),
-              _buildInfoRow(
-                Icons.group, 
-                'Stakeholders', 
-                '${opportunity.stakeholders.length} orang',
-              ),
-            ],
+            _buildInfoRow(Icons.contact_phone, 'Contact ID', opportunity.contactId!),
           ],
-        ),
+          SizedBox(height: AppTheme.spacingM),
+          _buildInfoRow(Icons.person_outline, 'Assigned To', opportunity.assignedTo),
+          if (opportunity.stakeholders.isNotEmpty) ...[
+            SizedBox(height: AppTheme.spacingM),
+            _buildInfoRow(
+              Icons.group,
+              'Stakeholders',
+              '${opportunity.stakeholders.length} orang',
+            ),
+          ],
+        ],
       ),
     );
   }
 
   Widget _buildProductsCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Produk/Layanan',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Wrap(
-              spacing: AppTheme.spacingS,
-              runSpacing: AppTheme.spacingS,
-              children: opportunity.products.map((product) {
-                return Chip(
-                  label: Text(product),
-                  backgroundColor: AppTheme.accentBlue.withOpacity(0.1),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Produk/Layanan',
+      child: Wrap(
+        spacing: AppTheme.spacingS,
+        runSpacing: AppTheme.spacingS,
+        children: opportunity.products.map((product) {
+          return CommonWidgets.buildChip(
+            text: product,
+            color: AppTheme.accentBlue,
+          );
+        }).toList(),
       ),
     );
   }
 
   Widget _buildCompetitorsCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Kompetitor',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Wrap(
-              spacing: AppTheme.spacingS,
-              runSpacing: AppTheme.spacingS,
-              children: opportunity.competitors.map((competitor) {
-                return Chip(
-                  label: Text(competitor),
-                  backgroundColor: AppTheme.errorColor.withOpacity(0.1),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Kompetitor',
+      child: Wrap(
+        spacing: AppTheme.spacingS,
+        runSpacing: AppTheme.spacingS,
+        children: opportunity.competitors.map((competitor) {
+          return CommonWidgets.buildChip(
+            text: competitor,
+            color: AppTheme.errorColor,
+            icon: Icons.warning,
+          );
+        }).toList(),
       ),
     );
   }
 
   Widget _buildNotesCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Catatan',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Text(
-              opportunity.notes!,
-              style: AppTheme.bodyMedium.copyWith(
-                color: AppTheme.textPrimaryLight,
-              ),
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Catatan',
+      child: Text(
+        opportunity.notes!,
+        style: AppTheme.bodyMedium,
       ),
     );
   }
 
-  Widget _buildStageChip(OpportunityStage stage) {
-    return Chip(
-      label: Text(
-        _getStageLabel(stage),
-        style: AppTheme.labelSmall.copyWith(color: Colors.white),
-      ),
-      backgroundColor: _getStageColor(stage),
-    );
-  }
-
-  Widget _buildPriorityChip(OpportunityPriority priority) {
-    return Chip(
-      label: Text(
-        _getPriorityLabel(priority),
-        style: AppTheme.labelSmall.copyWith(color: Colors.white),
-      ),
-      backgroundColor: _getPriorityColor(priority),
-    );
-  }
+  // Chips diganti dengan CommonWidgets.buildChip di header
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppTheme.textSecondaryLight),
+        Icon(icon, size: 20, color: AppTheme.textSecondary),
         SizedBox(width: AppTheme.spacingM),
         Expanded(
           child: Column(
@@ -483,13 +309,13 @@ class OpportunityDetailPage extends ConsumerWidget {
               Text(
                 label,
                 style: AppTheme.labelSmall.copyWith(
-                  color: AppTheme.textSecondaryLight,
+                  color: AppTheme.textPrimary,
                 ),
               ),
               Text(
                 value,
                 style: AppTheme.bodyMedium.copyWith(
-                  color: AppTheme.textPrimaryLight,
+                  color: AppTheme.textPrimary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -507,14 +333,14 @@ class OpportunityDetailPage extends ConsumerWidget {
         Text(
           label,
           style: AppTheme.labelSmall.copyWith(
-            color: AppTheme.textSecondaryLight,
+            color: AppTheme.textPrimary,
           ),
         ),
         SizedBox(height: AppTheme.spacingXS),
         Text(
           value,
           style: AppTheme.bodyMedium.copyWith(
-            color: AppTheme.textPrimaryLight,
+            color: AppTheme.textPrimary,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -548,7 +374,7 @@ class OpportunityDetailPage extends ConsumerWidget {
           Text(
             label,
             style: AppTheme.labelSmall.copyWith(
-              color: AppTheme.textSecondaryLight,
+              color: AppTheme.textPrimary,
             ),
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
@@ -583,7 +409,7 @@ class OpportunityDetailPage extends ConsumerWidget {
   Color _getPriorityColor(OpportunityPriority priority) {
     switch (priority) {
       case OpportunityPriority.low:
-        return AppTheme.textSecondaryLight;
+        return AppTheme.textSecondary;
       case OpportunityPriority.medium:
         return AppTheme.infoColor;
       case OpportunityPriority.high:

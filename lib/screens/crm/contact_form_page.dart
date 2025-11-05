@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/crm/contact_model.dart';
 import '../../providers/crm/contact_provider.dart';
 import '../../constants/theme.dart';
+import '../../widgets/common_widgets.dart';
 
 class ContactFormPage extends ConsumerStatefulWidget {
   final ContactModel? contact;
@@ -175,25 +176,13 @@ class _ContactFormPageState extends ConsumerState<ContactFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundDark,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryGreen,
-        title: Text(
-          widget.contact != null ? 'Edit Contact' : 'Add Contact',
-          style: AppTheme.heading4.copyWith(color: Colors.white),
-        ),
-        foregroundColor: Colors.white,
+      appBar: CommonWidgets.buildAppBar(
+        title: widget.contact != null ? 'Edit Kontak' : 'Tambah Kontak',
         actions: [
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-            ),
+          CommonWidgets.buildAppBarAction(
+            text: 'Simpan',
+            icon: Icons.save,
             onPressed: _saveContact,
-            child: Text(
-              'Save',
-              style: AppTheme.labelLarge.copyWith(
-                color: Colors.white,
-              ),
-            ),
           ),
         ],
       ),
@@ -204,264 +193,294 @@ class _ContactFormPageState extends ConsumerState<ContactFormPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Basic Information
-              _buildSectionHeader('Basic Information'),
-              SizedBox(height: AppTheme.spacingL),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _firstNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'First Name *',
-                        border: OutlineInputBorder(),
-                      ),
+              // Informasi Dasar
+              CommonWidgets.buildSectionCard(
+                title: 'Informasi Dasar',
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CommonWidgets.buildTextField(
+                            label: 'Nama Depan *',
+                            controller: _firstNameController,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Nama depan harus diisi';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        SizedBox(width: AppTheme.spacingL),
+                        Expanded(
+                          child: CommonWidgets.buildTextField(
+                            label: 'Nama Belakang *',
+                            controller: _lastNameController,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Nama belakang harus diisi';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: AppTheme.spacingL),
+                    CommonWidgets.buildTextField(
+                      label: 'Email *',
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      prefixIcon: Icons.email,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'First name is required';
+                          return 'Email harus diisi';
+                        }
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          return 'Format email tidak valid';
                         }
                         return null;
                       },
                     ),
-                  ),
-                  SizedBox(width: AppTheme.spacingL),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _lastNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Last Name *',
-                        border: OutlineInputBorder(),
+                    SizedBox(height: AppTheme.spacingL),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CommonWidgets.buildTextField(
+                            label: 'Nomor Telepon *',
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            prefixIcon: Icons.phone,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Nomor telepon harus diisi';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        SizedBox(width: AppTheme.spacingL),
+                        Expanded(
+                          child: CommonWidgets.buildTextField(
+                            label: 'HP',
+                            controller: _mobileController,
+                            keyboardType: TextInputType.phone,
+                            prefixIcon: Icons.smartphone,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: AppTheme.spacingXL),
+
+              // Informasi Profesional
+              CommonWidgets.buildSectionCard(
+                title: 'Informasi Profesional',
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CommonWidgets.buildTextField(
+                            label: 'Posisi',
+                            controller: _positionController,
+                            prefixIcon: Icons.work,
+                          ),
+                        ),
+                        SizedBox(width: AppTheme.spacingL),
+                        Expanded(
+                          child: CommonWidgets.buildTextField(
+                            label: 'Departemen',
+                            controller: _departmentController,
+                            prefixIcon: Icons.business,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: AppTheme.spacingL),
+                    DropdownButtonFormField<ContactType>(
+                      value: _selectedType,
+                      decoration: AppTheme.inputDecoration('Tipe Kontak').copyWith(
+                        prefixIcon: Icon(Icons.category, color: AppTheme.textSecondary),
                       ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Last name is required';
-                        }
-                        return null;
+                      style: AppTheme.bodyMedium,
+                      dropdownColor: AppTheme.surfaceDark,
+                      iconEnabledColor: AppTheme.textSecondary,
+                      iconDisabledColor: AppTheme.textTertiary,
+                      items: ContactType.values.map((type) {
+                        return DropdownMenuItem(
+                          value: type,
+                          child: Text(
+                            _getContactTypeLabel(type),
+                            style: AppTheme.bodyMedium,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedType = value!;
+                        });
                       },
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: AppTheme.spacingL),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email *',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
+                  ],
                 ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Email is required';
-                  }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                    return 'Please enter a valid email';
-                  }
-                  return null;
-                },
               ),
-              SizedBox(height: AppTheme.spacingL),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _phoneController,
-                      decoration: const InputDecoration(
-                        labelText: 'Phone *',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.phone),
+
+              SizedBox(height: AppTheme.spacingXL),
+
+              // Preferensi Kontak
+              CommonWidgets.buildSectionCard(
+                title: 'Preferensi Kontak',
+                child: Column(
+                  children: [
+                    DropdownButtonFormField<ContactStatus>(
+                      value: _selectedStatus,
+                      decoration: AppTheme.inputDecoration('Status').copyWith(
+                        prefixIcon: Icon(Icons.info, color: AppTheme.textSecondary),
                       ),
-                      keyboardType: TextInputType.phone,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Phone is required';
-                        }
-                        return null;
+                      style: AppTheme.bodyMedium,
+                      dropdownColor: AppTheme.surfaceDark,
+                      iconEnabledColor: AppTheme.textSecondary,
+                      iconDisabledColor: AppTheme.textTertiary,
+                      items: ContactStatus.values.map((status) {
+                        return DropdownMenuItem(
+                          value: status,
+                          child: Text(
+                            _getContactStatusLabel(status),
+                            style: AppTheme.bodyMedium,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedStatus = value!;
+                        });
                       },
                     ),
-                  ),
-                  SizedBox(width: AppTheme.spacingL),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _mobileController,
-                      decoration: const InputDecoration(
-                        labelText: 'Mobile',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.smartphone),
+                    SizedBox(height: AppTheme.spacingL),
+                    DropdownButtonFormField<PreferredContactMethod>(
+                      value: _selectedContactMethod,
+                      decoration: AppTheme.inputDecoration('Metode Kontak Favorit').copyWith(
+                        prefixIcon: Icon(Icons.contact_phone, color: AppTheme.textSecondary),
                       ),
-                      keyboardType: TextInputType.phone,
+                      style: AppTheme.bodyMedium,
+                      dropdownColor: AppTheme.surfaceDark,
+                      iconEnabledColor: AppTheme.textSecondary,
+                      iconDisabledColor: AppTheme.textTertiary,
+                      items: PreferredContactMethod.values.map((method) {
+                        return DropdownMenuItem(
+                          value: method,
+                          child: Text(
+                            _getContactMethodLabel(method),
+                            style: AppTheme.bodyMedium,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedContactMethod = value!;
+                        });
+                      },
                     ),
-                  ),
-                ],
+                    SizedBox(height: AppTheme.spacingL),
+                    SwitchListTile(
+                      title: Text(
+                        'Pengambil Keputusan',
+                        style: AppTheme.bodyMedium,
+                      ),
+                      subtitle: Text(
+                        'Kontak ini dapat membuat keputusan pembelian',
+                        style: AppTheme.bodySmall,
+                      ),
+                      value: _isDecisionMaker,
+                      onChanged: (value) {
+                        setState(() {
+                          _isDecisionMaker = value;
+                        });
+                      },
+                    ),
+                    SwitchListTile(
+                      title: Text(
+                        'Boleh Terima Marketing',
+                        style: AppTheme.bodyMedium,
+                      ),
+                      subtitle: Text(
+                        'Izinkan komunikasi marketing',
+                        style: AppTheme.bodySmall,
+                      ),
+                      value: _canReceiveMarketing,
+                      onChanged: (value) {
+                        setState(() {
+                          _canReceiveMarketing = value;
+                        });
+                      },
+                    ),
+                  ],
+                ),
               ),
+
               SizedBox(height: AppTheme.spacingXL),
 
-              // Professional Information
-              _buildSectionHeader('Professional Information'),
-              SizedBox(height: AppTheme.spacingL),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _positionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Position',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.work),
+              // Informasi Tambahan
+              CommonWidgets.buildSectionCard(
+                title: 'Informasi Tambahan',
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      onTap: _selectBirthday,
+                      child: InputDecorator(
+                        decoration: AppTheme.inputDecoration('Tanggal Lahir').copyWith(
+                          prefixIcon: Icon(Icons.cake, color: AppTheme.textSecondary),
+                          suffixIcon: Icon(Icons.calendar_today, color: AppTheme.textSecondary),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _selectedBirthday != null
+                                    ? '${_selectedBirthday!.day}/${_selectedBirthday!.month}/${_selectedBirthday!.year}'
+                                    : 'Belum diatur',
+                                style: AppTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(width: AppTheme.spacingL),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _departmentController,
-                      decoration: const InputDecoration(
-                        labelText: 'Department',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.business),
-                      ),
+                    SizedBox(height: AppTheme.spacingL),
+                    CommonWidgets.buildTextField(
+                      label: 'Profil LinkedIn',
+                      controller: _linkedinController,
+                      prefixIcon: Icons.link,
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: AppTheme.spacingL),
-              DropdownButtonFormField<ContactType>(
-                value: _selectedType,
-                decoration: const InputDecoration(
-                  labelText: 'Contact Type',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.category),
+                    SizedBox(height: AppTheme.spacingL),
+                    CommonWidgets.buildTextField(
+                      label: 'Akun Twitter',
+                      controller: _twitterController,
+                      prefixIcon: Icons.alternate_email,
+                    ),
+                    SizedBox(height: AppTheme.spacingL),
+                    CommonWidgets.buildTextField(
+                      label: 'Tag (pisahkan dengan koma)',
+                      hint: 'Contoh: VIP, Technical, Influencer',
+                      controller: _tagsController,
+                      prefixIcon: Icons.tag,
+                    ),
+                    SizedBox(height: AppTheme.spacingL),
+                    CommonWidgets.buildTextField(
+                      label: 'Catatan',
+                      controller: _notesController,
+                      prefixIcon: Icons.note,
+                      maxLines: 3,
+                    ),
+                  ],
                 ),
-                items: ContactType.values.map((type) {
-                  return DropdownMenuItem(
-                    value: type,
-                    child: Text(_getContactTypeLabel(type)),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedType = value!;
-                  });
-                },
               ),
-              SizedBox(height: AppTheme.spacingXL),
 
-              // Contact Preferences
-              _buildSectionHeader('Contact Preferences'),
-              SizedBox(height: AppTheme.spacingL),
-              DropdownButtonFormField<ContactStatus>(
-                value: _selectedStatus,
-                decoration: const InputDecoration(
-                  labelText: 'Status',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.info),
-                ),
-                items: ContactStatus.values.map((status) {
-                  return DropdownMenuItem(
-                    value: status,
-                    child: Text(_getContactStatusLabel(status)),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedStatus = value!;
-                  });
-                },
-              ),
-              SizedBox(height: AppTheme.spacingL),
-              DropdownButtonFormField<PreferredContactMethod>(
-                value: _selectedContactMethod,
-                decoration: const InputDecoration(
-                  labelText: 'Preferred Contact Method',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.contact_phone),
-                ),
-                items: PreferredContactMethod.values.map((method) {
-                  return DropdownMenuItem(
-                    value: method,
-                    child: Text(_getContactMethodLabel(method)),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedContactMethod = value!;
-                  });
-                },
-              ),
-              SizedBox(height: AppTheme.spacingL),
-              SwitchListTile(
-                title: const Text('Decision Maker'),
-                subtitle: const Text('This contact can make purchasing decisions'),
-                value: _isDecisionMaker,
-                onChanged: (value) {
-                  setState(() {
-                    _isDecisionMaker = value;
-                  });
-                },
-              ),
-              SwitchListTile(
-                title: const Text('Can Receive Marketing'),
-                subtitle: const Text('Allow marketing communications'),
-                value: _canReceiveMarketing,
-                onChanged: (value) {
-                  setState(() {
-                    _canReceiveMarketing = value;
-                  });
-                },
-              ),
-              SizedBox(height: AppTheme.spacingXL),
-
-              // Additional Information
-              _buildSectionHeader('Additional Information'),
-              SizedBox(height: AppTheme.spacingL),
-              ListTile(
-                title: const Text('Birthday'),
-                subtitle: Text(_selectedBirthday != null 
-                    ? '${_selectedBirthday!.day}/${_selectedBirthday!.month}/${_selectedBirthday!.year}'
-                    : 'Not set'),
-                leading: const Icon(Icons.cake),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: _selectBirthday,
-              ),
-              SizedBox(height: AppTheme.spacingL),
-              TextFormField(
-                controller: _linkedinController,
-                decoration: const InputDecoration(
-                  labelText: 'LinkedIn Profile',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.link),
-                ),
-              ),
-              SizedBox(height: AppTheme.spacingL),
-              TextFormField(
-                controller: _twitterController,
-                decoration: const InputDecoration(
-                  labelText: 'Twitter Handle',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.alternate_email),
-                ),
-              ),
-              SizedBox(height: AppTheme.spacingL),
-              TextFormField(
-                controller: _tagsController,
-                decoration: const InputDecoration(
-                  labelText: 'Tags (comma separated)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.tag),
-                  helperText: 'e.g., VIP, Technical, Influencer',
-                ),
-              ),
-              SizedBox(height: AppTheme.spacingL),
-              TextFormField(
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.note),
-                ),
-                maxLines: 3,
-              ),
               SizedBox(height: AppTheme.spacingXXL),
             ],
           ),
@@ -470,14 +489,6 @@ class _ContactFormPageState extends ConsumerState<ContactFormPage> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: AppTheme.heading4.copyWith(
-        color: AppTheme.primaryGreen,
-      ),
-    );
-  }
 
   String _getContactTypeLabel(ContactType type) {
     switch (type) {

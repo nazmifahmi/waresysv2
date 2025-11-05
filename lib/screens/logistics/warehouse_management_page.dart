@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../constants/theme.dart';
+import '../../widgets/common_widgets.dart';
 import '../../models/logistics/warehouse_location_model.dart';
 import '../../services/logistics/warehouse_repository.dart';
 import 'warehouse_form_page.dart';
+import '../../services/logistics/bin_repository.dart';
+import 'bin_management_page.dart';
 
 class WarehouseManagementPage extends StatefulWidget {
   const WarehouseManagementPage({super.key});
@@ -25,36 +29,31 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
   }
 
   Future<void> _deleteWarehouse(WarehouseModel warehouse) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await CommonWidgets.showConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Konfirmasi Hapus'),
-        content: Text('Apakah Anda yakin ingin menghapus gudang "${warehouse.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Hapus'),
-          ),
-        ],
-      ),
+      title: 'Konfirmasi Hapus',
+      content: 'Apakah Anda yakin ingin menghapus gudang "${warehouse.name}"?',
+      confirmText: 'Hapus',
+      cancelText: 'Batal',
+      isDestructive: true,
     );
 
     if (confirmed == true) {
       try {
         await _repository.delete(warehouse.warehouseId);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Gudang berhasil dihapus')),
+          CommonWidgets.showSnackBar(
+            context: context,
+            message: 'Gudang berhasil dihapus',
+            type: SnackBarType.success,
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e')),
+          CommonWidgets.showSnackBar(
+            context: context,
+            message: 'Error: $e',
+            type: SnackBarType.error,
           );
         }
       }
@@ -68,34 +67,39 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
         deltaStock: delta,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Stok berhasil ${delta > 0 ? 'ditambah' : 'dikurangi'}')),
+        CommonWidgets.showSnackBar(
+          context: context,
+          message: 'Stok berhasil ${delta > 0 ? 'ditambah' : 'dikurangi'}',
+          type: SnackBarType.success,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+        CommonWidgets.showSnackBar(
+          context: context,
+          message: 'Error: $e',
+          type: SnackBarType.error,
         );
       }
     }
   }
 
   Color _getCapacityColor(WarehouseModel warehouse) {
-    final ratio = warehouse.stockCount / warehouse.capacity;
-    if (ratio >= 0.8) return Colors.red;
-    if (ratio >= 0.6) return Colors.orange;
-    return Colors.green;
+    final ratio = warehouse.capacity == 0 ? 0.0 : warehouse.stockCount / warehouse.capacity;
+    if (ratio >= 0.8) return AppTheme.errorColor;
+    if (ratio >= 0.6) return AppTheme.warningColor;
+    return AppTheme.successColor;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manajemen Gudang'),
+      backgroundColor: AppTheme.backgroundDark,
+      appBar: CommonWidgets.buildAppBar(
+        title: 'Manajemen Gudang',
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add, color: AppTheme.textPrimary),
             onPressed: () => _openForm(),
           ),
         ],
@@ -103,13 +107,18 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
+            padding: const EdgeInsets.all(AppTheme.spacingL),
+            child: CommonWidgets.buildTextField(
+              label: 'Cari gudang',
+              hint: 'Nama atau lokasi gudang...',
               controller: _searchController,
-              decoration: const InputDecoration(
-                labelText: 'Cari gudang...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+              prefixIcon: Icons.search,
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.clear, color: AppTheme.textSecondary),
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() {});
+                },
               ),
               onChanged: (value) {
                 setState(() {
@@ -123,11 +132,15 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
               stream: _repository.watchAll(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return CommonWidgets.buildLoadingIndicator();
                 }
 
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return CommonWidgets.buildErrorState(
+                    title: 'Terjadi kesalahan',
+                    subtitle: '${snapshot.error}',
+                    onRetry: () => setState(() {}),
+                  );
                 }
 
                 final warehouses = snapshot.data ?? [];
@@ -137,48 +150,105 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                 }).toList();
 
                 if (filteredWarehouses.isEmpty) {
-                  return const Center(child: Text('Tidak ada data gudang'));
+                  return CommonWidgets.buildEmptyState(
+                    title: 'Tidak ada data gudang',
+                    subtitle: 'Tambahkan gudang baru untuk mulai mengelola stok',
+                    icon: Icons.warehouse,
+                    action: CommonWidgets.buildPrimaryButton(
+                      text: 'Tambah Gudang',
+                      icon: Icons.add,
+                      onPressed: () => _openForm(),
+                    ),
+                  );
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppTheme.spacingL),
                   itemCount: filteredWarehouses.length,
                   itemBuilder: (context, index) {
                     final warehouse = filteredWarehouses[index];
-                    final capacityRatio = warehouse.stockCount / warehouse.capacity;
+                    final capacityRatio = warehouse.capacity == 0
+                        ? 0.0
+                        : warehouse.stockCount / warehouse.capacity;
 
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
+                    return CommonWidgets.buildCard(
+                      padding: const EdgeInsets.all(AppTheme.spacingM),
                       child: ListTile(
+                        contentPadding: EdgeInsets.zero,
                         title: Text(
                           warehouse.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: AppTheme.heading4,
                         ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Lokasi: ${warehouse.location}'),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Text('Stok: ${warehouse.stockCount}/${warehouse.capacity}'),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: LinearProgressIndicator(
-                                    value: capacityRatio,
-                                    backgroundColor: Colors.grey[300],
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      _getCapacityColor(warehouse),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: AppTheme.spacingXS),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Lokasi: ${warehouse.location}', style: AppTheme.bodyMedium),
+                              const SizedBox(height: AppTheme.spacingS),
+                              Row(
+                                children: [
+                                  Text('Stok: ${warehouse.stockCount}/${warehouse.capacity}',
+                                      style: AppTheme.bodySmall),
+                                  const SizedBox(width: AppTheme.spacingM),
+                                  Expanded(
+                                    child: LinearProgressIndicator(
+                                      value: capacityRatio,
+                                      backgroundColor: AppTheme.borderDark,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        _getCapacityColor(warehouse),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text('${(capacityRatio * 100).toStringAsFixed(1)}%'),
-                              ],
-                            ),
-                          ],
+                                  const SizedBox(width: AppTheme.spacingM),
+                                  Text('${(capacityRatio * 100).toStringAsFixed(1)}%',
+                                      style: AppTheme.labelMedium),
+                                ],
+                              ),
+                              const SizedBox(height: AppTheme.spacingS),
+                              FutureBuilder<Map<String, dynamic>>(
+                                future: BinRepository().computeWarehouseOccupancy(warehouse.warehouseId),
+                                builder: (context, occSnap) {
+                                  if (occSnap.connectionState == ConnectionState.waiting) {
+                                    return const LinearProgressIndicator();
+                                  }
+                                  if (!occSnap.hasData) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  final occ = occSnap.data!;
+                                  final percent = (occ['percent'] ?? 0.0) as double;
+                                  final usedM3 = (occ['totalUsedM3'] ?? 0.0) as double;
+                                  final totalM3 = (occ['totalCapacityM3'] ?? 0.0) as double;
+                                  final color = percent >= 0.8
+                                      ? AppTheme.errorColor
+                                      : percent >= 0.6
+                                          ? AppTheme.warningColor
+                                          : AppTheme.successColor;
+                                  return Row(
+                                    children: [
+                                      Text(
+                                        'Okupansi Volume: ${usedM3.toStringAsFixed(2)}/${totalM3.toStringAsFixed(2)} m3',
+                                        style: AppTheme.bodySmall,
+                                      ),
+                                      const SizedBox(width: AppTheme.spacingM),
+                                      Expanded(
+                                        child: LinearProgressIndicator(
+                                          value: totalM3 > 0 ? percent : 0,
+                                          backgroundColor: AppTheme.borderDark,
+                                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                                        ),
+                                      ),
+                                      const SizedBox(width: AppTheme.spacingM),
+                                      Text('${(percent * 100).toStringAsFixed(1)}%', style: AppTheme.labelMedium),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                         trailing: PopupMenuButton<String>(
+                          color: AppTheme.surfaceDark,
                           onSelected: (value) {
                             switch (value) {
                               case 'edit':
@@ -193,10 +263,21 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                               case 'remove_stock':
                                 _updateStock(warehouse, -10);
                                 break;
+                              case 'manage_bins':
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => BinManagementPage(
+                                      warehouseId: warehouse.warehouseId,
+                                      warehouseName: warehouse.name,
+                                    ),
+                                  ),
+                                );
+                                break;
                             }
                           },
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
                               value: 'edit',
                               child: ListTile(
                                 leading: Icon(Icons.edit),
@@ -204,32 +285,41 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                                 contentPadding: EdgeInsets.zero,
                               ),
                             ),
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'add_stock',
                               child: ListTile(
-                                leading: Icon(Icons.add_circle, color: Colors.green),
+                                leading: Icon(Icons.add_circle, color: AppTheme.successColor),
                                 title: Text('Tambah Stok (+10)'),
                                 contentPadding: EdgeInsets.zero,
                               ),
                             ),
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'remove_stock',
                               child: ListTile(
-                                leading: Icon(Icons.remove_circle, color: Colors.orange),
+                                leading: Icon(Icons.remove_circle, color: AppTheme.warningColor),
                                 title: Text('Kurangi Stok (-10)'),
                                 contentPadding: EdgeInsets.zero,
                               ),
                             ),
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'delete',
                               child: ListTile(
-                                leading: Icon(Icons.delete, color: Colors.red),
+                                leading: Icon(Icons.delete, color: AppTheme.errorColor),
                                 title: Text('Hapus'),
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'manage_bins',
+                              child: ListTile(
+                                leading: Icon(Icons.view_list),
+                                title: Text('Kelola Bin'),
                                 contentPadding: EdgeInsets.zero,
                               ),
                             ),
                           ],
                         ),
+                        onTap: () => _openForm(warehouse),
                       ),
                     );
                   },

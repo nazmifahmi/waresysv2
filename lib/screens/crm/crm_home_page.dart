@@ -301,56 +301,87 @@ class _CRMHomePageState extends ConsumerState<CRMHomePage> {
           Container(
             padding: const EdgeInsets.all(AppTheme.spacingXL),
             decoration: AppTheme.surfaceDecoration,
-            child: Column(
-              children: [
-                Row(
+            child: Consumer(
+              builder: (context, ref, _) {
+                final customersStats = ref.watch(customerStatisticsProvider);
+                final leadsStats = ref.watch(leadStatisticsProvider);
+                final opportunitiesStats = ref.watch(opportunityStatisticsProvider);
+                final contactsStats = ref.watch(contactStatisticsProvider);
+
+                // Helper to extract total safely
+                int _getTotal(AsyncValue<Map<String, dynamic>> stats) {
+                  return stats.when(
+                    data: (map) => (map['total'] as int?) ?? 0,
+                    loading: () => 0,
+                    error: (_, __) => 0,
+                  );
+                }
+
+                final int customersTotal = _getTotal(customersStats);
+                final int leadsTotal = _getTotal(leadsStats);
+                final int opportunitiesTotal = opportunitiesStats.when(
+                  data: (map) => (map['total'] as int?) ?? 0,
+                  loading: () => 0,
+                  error: (_, __) => 0,
+                );
+                final int contactsTotal = contactsStats.when(
+                  data: (map) => (map['total'] as int?) ?? 0,
+                  loading: () => 0,
+                  error: (_, __) => 0,
+                );
+
+                return Column(
                   children: [
-                    Expanded(
-                      child: AppTheme.buildFeatureCard(
-                        icon: Icons.people,
-                        title: 'Customers',
-                        subtitle: 'Kelola data pelanggan',
-                        color: AppTheme.accentBlue,
-                        onTap: () => _navigateToCustomers(),
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppTheme.buildFeatureCard(
+                            icon: Icons.people,
+                            title: 'Customers',
+                            subtitle: 'Kelola data pelanggan • Total: $customersTotal',
+                            color: AppTheme.accentBlue,
+                            onTap: () => _navigateToCustomers(),
+                          ),
+                        ),
+                        const SizedBox(width: AppTheme.spacingM),
+                        Expanded(
+                          child: AppTheme.buildFeatureCard(
+                            icon: Icons.trending_up,
+                            title: 'Leads',
+                            subtitle: 'Kelola prospek • Total: $leadsTotal',
+                            color: AppTheme.accentGreen,
+                            onTap: () => _navigateToLeads(),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: AppTheme.spacingM),
-                    Expanded(
-                      child: AppTheme.buildFeatureCard(
-                        icon: Icons.trending_up,
-                        title: 'Leads',
-                        subtitle: 'Kelola prospek',
-                        color: AppTheme.accentGreen,
-                        onTap: () => _navigateToLeads(),
-                      ),
+                    const SizedBox(height: AppTheme.spacingM),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppTheme.buildFeatureCard(
+                            icon: Icons.business_center,
+                            title: 'Opportunities',
+                            subtitle: 'Peluang bisnis • Total: $opportunitiesTotal',
+                            color: AppTheme.accentOrange,
+                            onTap: () => _navigateToOpportunities(),
+                          ),
+                        ),
+                        const SizedBox(width: AppTheme.spacingM),
+                        Expanded(
+                          child: AppTheme.buildFeatureCard(
+                            icon: Icons.contact_phone,
+                            title: 'Contacts',
+                            subtitle: 'Kontak bisnis • Total: $contactsTotal',
+                            color: AppTheme.accentPurple,
+                            onTap: () => _navigateToContacts(),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                ),
-                const SizedBox(height: AppTheme.spacingM),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppTheme.buildFeatureCard(
-                        icon: Icons.business_center,
-                        title: 'Opportunities',
-                        subtitle: 'Peluang bisnis',
-                        color: AppTheme.accentOrange,
-                        onTap: () => _navigateToOpportunities(),
-                      ),
-                    ),
-                    const SizedBox(width: AppTheme.spacingM),
-                    Expanded(
-                      child: AppTheme.buildFeatureCard(
-                        icon: Icons.contact_phone,
-                        title: 'Contacts',
-                        subtitle: 'Kontak bisnis',
-                        color: AppTheme.accentPurple,
-                        onTap: () => _navigateToContacts(),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                );
+              },
             ),
           ),
         ],

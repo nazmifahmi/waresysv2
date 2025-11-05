@@ -351,9 +351,22 @@ class AppTheme {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: surfaceDark,
+      hintStyle: bodyMedium.copyWith(color: textTertiary),
+      labelStyle: labelMedium.copyWith(color: textSecondary),
+      floatingLabelStyle: labelMedium.copyWith(color: textPrimary),
+      prefixIconColor: textSecondary,
+      suffixIconColor: textSecondary,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radiusM),
         borderSide: const BorderSide(color: borderDark),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(radiusM),
+        borderSide: const BorderSide(color: borderDark),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(radiusM),
+        borderSide: const BorderSide(color: accentBlue),
       ),
     ),
   );
@@ -412,6 +425,11 @@ class AppTheme {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: surfaceLight,
+      hintStyle: bodyMedium.copyWith(color: textTertiaryLight),
+      labelStyle: labelMedium.copyWith(color: textSecondaryLight),
+      floatingLabelStyle: labelMedium.copyWith(color: textPrimaryLight),
+      prefixIconColor: textSecondaryLight,
+      suffixIconColor: textSecondaryLight,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(radiusM),
         borderSide: const BorderSide(color: borderLight),

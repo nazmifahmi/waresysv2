@@ -13,6 +13,9 @@ class Product {
   final DateTime updatedAt;
   final String createdBy;
   final String? sku; // Stock Keeping Unit
+  final String unit; // Satuan produk (pcs, box, kg, liter)
+  final double volumePerUnit; // Volume per 1 unit produk
+  final String volumeUnit; // Satuan volume (m3, liter, cm3, ft3)
 
   Product({
     required this.id,
@@ -27,6 +30,9 @@ class Product {
     required this.updatedAt,
     required this.createdBy,
     this.sku,
+    this.unit = 'pcs',
+    this.volumePerUnit = 0.0,
+    this.volumeUnit = 'm3',
   });
 
   // Convert Product to Map for Firestore
@@ -44,6 +50,9 @@ class Product {
       'updatedAt': updatedAt,
       'createdBy': createdBy,
       'sku': sku,
+      'unit': unit,
+      'volumePerUnit': volumePerUnit,
+      'volumeUnit': volumeUnit,
     };
   }
 
@@ -63,6 +72,9 @@ class Product {
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
       createdBy: data['createdBy'] ?? '',
       sku: data['sku'],
+      unit: data['unit'] ?? 'pcs',
+      volumePerUnit: (data['volumePerUnit'] ?? 0).toDouble(),
+      volumeUnit: data['volumeUnit'] ?? 'm3',
     );
   }
 
@@ -77,6 +89,9 @@ class Product {
     String? imageUrl,
     DateTime? updatedAt,
     String? sku,
+    String? unit,
+    double? volumePerUnit,
+    String? volumeUnit,
   }) {
     return Product(
       id: id,
@@ -91,6 +106,9 @@ class Product {
       updatedAt: updatedAt ?? this.updatedAt,
       createdBy: createdBy,
       sku: sku ?? this.sku,
+      unit: unit ?? this.unit,
+      volumePerUnit: volumePerUnit ?? this.volumePerUnit,
+      volumeUnit: volumeUnit ?? this.volumeUnit,
     );
   }
-} 
+}

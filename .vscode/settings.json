@@ -1,0 +1,9 @@
+{
+  "remote.autoForwardPorts": true,
+  "remote.portsAttributes": {
+    "pattern": {
+      "port": ".*",
+      "onAutoForward": "silent"
+    }
+  }
+}

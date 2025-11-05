@@ -4,6 +4,14 @@ import 'shipping_dashboard_page.dart';
 import 'fleet_map_page.dart';
 import 'warehouse_management_page.dart';
 import 'forecast_dashboard_page.dart';
+import '../../services/logistics/shipment_repository.dart';
+import '../../services/logistics/fleet_repository.dart';
+import '../../services/logistics/warehouse_repository.dart';
+import '../../services/logistics/forecast_repository.dart';
+import '../../models/logistics/shipment_model.dart';
+import '../../models/logistics/fleet_vehicle_model.dart';
+import '../../models/logistics/warehouse_location_model.dart';
+import '../../models/logistics/forecast_model.dart';
 
 class LogisticsHomePage extends StatelessWidget {
   const LogisticsHomePage({super.key});
@@ -118,7 +126,7 @@ class LogisticsHomePage extends StatelessWidget {
               
               const SizedBox(height: AppTheme.spacingXL),
               
-              // Quick Stats Section
+              // Quick Stats Section (live data)
               Container(
                 padding: const EdgeInsets.all(AppTheme.spacingL),
                 decoration: AppTheme.surfaceDecoration,
@@ -133,20 +141,35 @@ class LogisticsHomePage extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: _buildStatCard(
-                            'Pengiriman Aktif',
-                            '12',
-                            Icons.local_shipping,
-                            AppTheme.accentBlue,
+                          child: StreamBuilder<List<ShipmentModel>>(
+                            stream: ShipmentRepository().watchAll(),
+                            builder: (context, snapshot) {
+                              final shipments = snapshot.data ?? [];
+                              final activeCount = shipments
+                                  .where((s) => s.status == ShipmentStatus.pending || s.status == ShipmentStatus.inTransit)
+                                  .length;
+                              return _buildStatCard(
+                                'Pengiriman Aktif',
+                                '${activeCount}',
+                                Icons.local_shipping,
+                                AppTheme.accentBlue,
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(width: AppTheme.spacingM),
                         Expanded(
-                          child: _buildStatCard(
-                            'Armada Tersedia',
-                            '8',
-                            Icons.directions_car,
-                            AppTheme.accentGreen,
+                          child: StreamBuilder<List<FleetModel>>(
+                            stream: FleetRepository().watchByStatus(VehicleStatus.AVAILABLE),
+                            builder: (context, snapshot) {
+                              final available = snapshot.data?.length ?? 0;
+                              return _buildStatCard(
+                                'Armada Tersedia',
+                                '$available',
+                                Icons.directions_car,
+                                AppTheme.accentGreen,
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -155,20 +178,35 @@ class LogisticsHomePage extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: _buildStatCard(
-                            'Lokasi Gudang',
-                            '5',
-                            Icons.warehouse,
-                            AppTheme.accentOrange,
+                          child: StreamBuilder<List<WarehouseModel>>(
+                            stream: WarehouseRepository().watchAll(),
+                            builder: (context, snapshot) {
+                              final count = snapshot.data?.length ?? 0;
+                              return _buildStatCard(
+                                'Lokasi Gudang',
+                                '$count',
+                                Icons.warehouse,
+                                AppTheme.accentOrange,
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(width: AppTheme.spacingM),
                         Expanded(
-                          child: _buildStatCard(
-                            'Prediksi Akurat',
-                            '94%',
-                            Icons.analytics,
-                            AppTheme.accentPurple,
+                          child: StreamBuilder<List<ForecastModel>>(
+                            stream: ForecastRepository().watchAll(),
+                            builder: (context, snapshot) {
+                              final forecasts = snapshot.data ?? [];
+                              final total = forecasts.length;
+                              final highAcc = forecasts.where((f) => f.accuracyRate >= 80).length;
+                              final percent = total == 0 ? 0 : ((highAcc / total) * 100).round();
+                              return _buildStatCard(
+                                'Prediksi Akurat',
+                                '${percent}%',
+                                Icons.analytics,
+                                AppTheme.accentPurple,
+                              );
+                            },
                           ),
                         ),
                       ],

@@ -93,15 +93,15 @@ class OpportunityRepository {
       }
       
       if (minValue != null) {
-        query = query.where('value', isGreaterThanOrEqualTo: minValue);
+        query = query.where('amount', isGreaterThanOrEqualTo: minValue);
       }
       
       if (maxValue != null) {
-        query = query.where('value', isLessThanOrEqualTo: maxValue);
+        query = query.where('amount', isLessThanOrEqualTo: maxValue);
       }
       
-      // Order by value (highest first)
-      query = query.orderBy('value', descending: true);
+      // Order by amount (highest first)
+      query = query.orderBy('amount', descending: true);
       
       // Apply pagination
       if (startAfter != null) {
@@ -142,7 +142,7 @@ class OpportunityRepository {
       query = query.where('stage', isEqualTo: stage.name);
     }
     
-    query = query.orderBy('value', descending: true).limit(limit);
+    query = query.orderBy('amount', descending: true).limit(limit);
 
     return query.snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
@@ -199,7 +199,7 @@ class OpportunityRepository {
       
       final query = _opportunitiesCollection!
           .where('stage', isEqualTo: stage.name)
-          .orderBy('value', descending: true)
+          .orderBy('amount', descending: true)
           .limit(50);
       
       final snapshot = await query.get();
@@ -238,14 +238,14 @@ class OpportunityRepository {
       
       final searchTermLower = searchTerm.toLowerCase();
       
-      // Search by title
-      final titleQuery = _opportunitiesCollection!
-          .where('title', isGreaterThanOrEqualTo: searchTermLower)
-          .where('title', isLessThan: '${searchTermLower}z')
+      // Search by normalized name field
+      final nameQuery = _opportunitiesCollection!
+          .where('searchName', isGreaterThanOrEqualTo: searchTermLower)
+          .where('searchName', isLessThan: '${searchTermLower}z')
           .limit(10);
       
-      final titleResults = await titleQuery.get();
-      final opportunities = titleResults.docs.map((doc) => 
+      final nameResults = await nameQuery.get();
+      final opportunities = nameResults.docs.map((doc) => 
         OpportunityModel.fromMap(doc.data()).copyWith(id: doc.id)
       ).toList();
       
@@ -283,7 +283,7 @@ class OpportunityRepository {
       
       for (final doc in allOpportunities.docs) {
         final data = doc.data();
-        final value = (data['value'] as num?)?.toDouble() ?? 0.0;
+        final value = (data['amount'] as num?)?.toDouble() ?? 0.0;
         final stage = data['stage'] as String? ?? 'prospecting';
         
         totalValue += value;
@@ -328,7 +328,7 @@ class OpportunityRepository {
         double stageValue = 0.0;
         for (final doc in snapshot.docs) {
           final data = doc.data();
-          final value = (data['value'] as num?)?.toDouble() ?? 0.0;
+          final value = (data['amount'] as num?)?.toDouble() ?? 0.0;
           stageValue += value;
         }
         

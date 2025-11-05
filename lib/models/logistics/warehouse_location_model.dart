@@ -7,6 +7,8 @@ class WarehouseModel {
   final String location;
   final int stockCount;
   final int capacity;
+  final double volume; // kapasitas fisik (mis: m3)
+  final String volumeUnit; // satuan volume (contoh: m3, ft3)
 
   WarehouseModel({
     required this.warehouseId,
@@ -14,8 +16,9 @@ class WarehouseModel {
     required this.location,
     required this.stockCount,
     required this.capacity,
-  }) : assert(warehouseId.isNotEmpty, 'warehouseId cannot be empty'),
-       assert(name.isNotEmpty, 'name cannot be empty'),
+    this.volume = 0.0,
+    this.volumeUnit = 'm3',
+  }) : assert(name.isNotEmpty, 'name cannot be empty'),
        assert(location.isNotEmpty, 'location cannot be empty'),
        assert(stockCount >= 0, 'stockCount must be >= 0'),
        assert(capacity > 0, 'capacity must be greater than 0');
@@ -26,6 +29,8 @@ class WarehouseModel {
         'location': location,
         'stockCount': stockCount,
         'capacity': capacity,
+        'volume': volume,
+        'volumeUnit': volumeUnit,
         'nameLower': name.toLowerCase(),
       };
 
@@ -35,6 +40,8 @@ class WarehouseModel {
         location: map['location'],
         stockCount: (map['stockCount'] ?? 0) as int,
         capacity: (map['capacity'] ?? 0) as int,
+        volume: ((map['volume'] ?? 0) as num).toDouble(),
+        volumeUnit: map['volumeUnit'] ?? 'm3',
       );
 
   factory WarehouseModel.fromDoc(DocumentSnapshot doc) =>

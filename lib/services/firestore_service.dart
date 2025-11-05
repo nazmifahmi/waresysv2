@@ -81,6 +81,9 @@ class FirestoreService {
           createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
           updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
           createdBy: data['createdBy'] ?? '',
+          unit: data['unit'] ?? 'pcs',
+          volumePerUnit: ((data['volumePerUnit'] ?? 0) as num).toDouble(),
+          volumeUnit: data['volumeUnit'] ?? 'm3',
         );
       }).toList();
     });
@@ -104,6 +107,9 @@ class FirestoreService {
         createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         createdBy: data['createdBy'] ?? '',
+        unit: data['unit'] ?? 'pcs',
+        volumePerUnit: ((data['volumePerUnit'] ?? 0) as num).toDouble(),
+        volumeUnit: data['volumeUnit'] ?? 'm3',
       );
     }).toList();
   }
@@ -126,6 +132,9 @@ class FirestoreService {
         createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         createdBy: data['createdBy'] ?? '',
+        unit: data['unit'] ?? 'pcs',
+        volumePerUnit: ((data['volumePerUnit'] ?? 0) as num).toDouble(),
+        volumeUnit: data['volumeUnit'] ?? 'm3',
       );
     }
     return null;
@@ -145,6 +154,9 @@ class FirestoreService {
       'createdAt': Timestamp.fromDate(product.createdAt),
       'updatedAt': Timestamp.fromDate(product.updatedAt),
       'createdBy': userId,
+      'unit': product.unit,
+      'volumePerUnit': product.volumePerUnit,
+      'volumeUnit': product.volumeUnit,
     });
     
     // Log activity
@@ -179,6 +191,9 @@ class FirestoreService {
       'sku': product.sku,
       'imageUrl': product.imageUrl,
       'updatedAt': Timestamp.fromDate(product.updatedAt),
+      'unit': product.unit,
+      'volumePerUnit': product.volumePerUnit,
+      'volumeUnit': product.volumeUnit,
     });
     
     // Log activity
@@ -338,6 +353,7 @@ class FirestoreService {
     String? productId, 
     String? category, 
     String? type,
+    String? warehouseId,
     DateTime? startDate,
   }) {
     if (stockLogs == null) return Stream.value([]);
@@ -356,13 +372,16 @@ class FirestoreService {
     if (type != null && type.isNotEmpty) {
       query = query.where('type', isEqualTo: type);
     }
+    if (warehouseId != null && warehouseId.isNotEmpty) {
+      query = query.where('warehouseId', isEqualTo: warehouseId);
+    }
     
     return query.snapshots().map((snapshot) => 
       snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList()
     );
   }
 
-  Future<void> updateStock(String productId, int quantity, {required String userId, required String userName}) async {
+  Future<void> updateStock(String productId, int quantity, {required String userId, required String userName, String? warehouseId}) async {
     final product = await getProduct(productId);
     if (product != null) {
       final before = product.stock;
@@ -392,6 +411,7 @@ class FirestoreService {
         'after': after,
         'userId': userId,
         'userName': userName,
+        if (warehouseId != null) 'warehouseId': warehouseId,
         'timestamp': FieldValue.serverTimestamp(),
       });
 

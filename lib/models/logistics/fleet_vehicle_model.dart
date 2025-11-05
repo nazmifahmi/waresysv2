@@ -19,8 +19,7 @@ class FleetModel {
     this.status = VehicleStatus.AVAILABLE,
     this.lastServiceDate,
     this.nextServiceDate,
-  }) : assert(fleetId.isNotEmpty, 'fleetId cannot be empty'),
-       assert(vehicleNumber.isNotEmpty, 'vehicleNumber cannot be empty'),
+  }) : assert(vehicleNumber.isNotEmpty, 'vehicleNumber cannot be empty'),
        assert(driverName.isNotEmpty, 'driverName cannot be empty'),
        assert(capacity > 0, 'capacity must be greater than 0');
 

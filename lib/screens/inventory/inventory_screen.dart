@@ -11,6 +11,12 @@ import 'package:open_filex/open_filex.dart';
 import 'package:intl/intl.dart';
 import '../../providers/inventory_provider.dart';
 import 'package:provider/provider.dart';
+import '../../providers/logistics/active_warehouse_provider.dart';
+import '../../services/logistics/warehouse_repository.dart';
+import '../../models/logistics/warehouse_location_model.dart';
+import '../../services/logistics/inventory_repository.dart';
+import '../../services/logistics/bin_repository.dart';
+import '../../models/logistics/bin_model.dart';
 import '../../constants/theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/floating_chat_bubble.dart';
@@ -105,7 +111,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 ],
               ),
             ),
-            child: _pages[_selectedIndex],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const WarehouseSelectorBar(),
+                Expanded(child: _pages[_selectedIndex]),
+              ],
+            ),
           ),
           const FloatingChatBubble(),
         ],
@@ -160,6 +172,77 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// Selector gudang aktif di bagian atas modul Inventory
+class WarehouseSelectorBar extends StatelessWidget {
+  const WarehouseSelectorBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final repo = WarehouseRepository();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceDark,
+        border: Border(
+          bottom: BorderSide(color: AppTheme.borderDark, width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warehouse, color: Colors.white70),
+          const SizedBox(width: 8),
+          Expanded(
+            child: StreamBuilder<List<WarehouseModel>>(
+              stream: repo.watchAll(),
+              builder: (context, snapshot) {
+                final activeProvider = Provider.of<ActiveWarehouseProvider>(context);
+                final warehouses = snapshot.data ?? const [];
+                final active = activeProvider.activeWarehouse;
+                final items = warehouses
+                    .map((w) => DropdownMenuItem<WarehouseModel>(
+                          value: w,
+                          child: Text(
+                            w.name,
+                            style: AppTheme.labelMedium.copyWith(color: AppTheme.textPrimary),
+                          ),
+                        ))
+                    .toList();
+
+                return Row(
+                  children: [
+                    Text(
+                      'Gudang:',
+                      style: AppTheme.labelMedium.copyWith(color: AppTheme.textSecondary),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<WarehouseModel>(
+                          isExpanded: true,
+                          value: active != null && warehouses.any((w) => w.warehouseId == active.warehouseId)
+                              ? warehouses.firstWhere((w) => w.warehouseId == active.warehouseId)
+                              : (warehouses.isNotEmpty ? warehouses.first : null),
+                          items: items,
+                          onChanged: (val) {
+                            Provider.of<ActiveWarehouseProvider>(context, listen: false)
+                                .setActiveWarehouse(val);
+                          },
+                          dropdownColor: AppTheme.surfaceDark,
+                          iconEnabledColor: Colors.white70,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -575,6 +658,11 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   bool _isAddingNewCategory = false;
   late TextEditingController _newCategoryController;
+  String _unit = 'pcs';
+  String? _selectedWarehouseId;
+  double _volumePerUnit = 0.0;
+  String _volumeUnit = 'm3';
+  String? _selectedBinId;
 
   User? get _currentUser => _auth.currentUser;
   String get _userId => _currentUser?.uid ?? '';
@@ -590,6 +678,13 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
     _categoryController = TextEditingController(text: widget.product?.category ?? '');
     _skuController = TextEditingController(text: widget.product?.sku ?? widget.prefilledSku ?? '');
     _newCategoryController = TextEditingController();
+    _unit = widget.product?.unit ?? 'pcs';
+    _volumePerUnit = widget.product?.volumePerUnit ?? 0.0;
+    _volumeUnit = widget.product?.volumeUnit ?? 'm3';
+    try {
+      final activeWarehouseId = Provider.of<ActiveWarehouseProvider>(context, listen: false).activeWarehouseId;
+      _selectedWarehouseId = activeWarehouseId;
+    } catch (_) {}
   }
 
   @override
@@ -687,6 +782,93 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
                 controller: _skuController,
                 decoration: const InputDecoration(labelText: 'SKU (Opsional)'),
               ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _unit,
+                decoration: const InputDecoration(labelText: 'Satuan'),
+                items: const [
+                  DropdownMenuItem(value: 'pcs', child: Text('pcs')),
+                  DropdownMenuItem(value: 'box', child: Text('box')),
+                  DropdownMenuItem(value: 'kg', child: Text('kg')),
+                  DropdownMenuItem(value: 'liter', child: Text('liter')),
+                ],
+                onChanged: (val) => setState(() => _unit = val ?? 'pcs'),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                initialValue: _volumePerUnit == 0.0 ? '' : _volumePerUnit.toString(),
+                decoration: const InputDecoration(labelText: 'Volume per unit'),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (val) => _volumePerUnit = double.tryParse(val) ?? 0.0,
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _volumeUnit,
+                decoration: const InputDecoration(labelText: 'Satuan volume'),
+                items: const [
+                  DropdownMenuItem(value: 'm3', child: Text('m³')),
+                  DropdownMenuItem(value: 'liter', child: Text('liter')),
+                  DropdownMenuItem(value: 'cm3', child: Text('cm³')),
+                  DropdownMenuItem(value: 'ft3', child: Text('ft³')),
+                ],
+                onChanged: (val) => setState(() => _volumeUnit = val ?? 'm3'),
+              ),
+              if (widget.product == null) ...[
+                const SizedBox(height: 8),
+                StreamBuilder<List<WarehouseModel>>(
+                  stream: WarehouseRepository().watchAll(),
+                  builder: (context, snapshot) {
+                    final warehouses = snapshot.data ?? const [];
+                    return DropdownButtonFormField<String>(
+                      value: _selectedWarehouseId,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Gudang untuk stok awal'),
+                      hint: const Text('Pilih gudang'),
+                      items: warehouses
+                          .map((w) => DropdownMenuItem(
+                                value: w.warehouseId,
+                                child: Text(w.name),
+                              ))
+                          .toList(),
+                      onChanged: (val) => setState(() => _selectedWarehouseId = val),
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                if ((_selectedWarehouseId ?? '').isNotEmpty)
+                  StreamBuilder<List<BinModel>>(
+                    stream: BinRepository().watchByWarehouse(_selectedWarehouseId!),
+                    builder: (context, snapshot) {
+                      final bins = snapshot.data ?? const [];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          DropdownButtonFormField<String>(
+                            value: _selectedBinId,
+                            isExpanded: true,
+                            decoration: const InputDecoration(labelText: 'Bin untuk stok awal'),
+                            hint: const Text('Pilih bin'),
+                            items: bins
+                                .map((b) => DropdownMenuItem(
+                                      value: b.binId,
+                                      child: Text('${b.name} (${b.capacityVolume} ${b.capacityUnit})'),
+                                    ))
+                                .toList(),
+                            onChanged: (val) => setState(() => _selectedBinId = val),
+                          ),
+                          if (bins.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6.0),
+                              child: Text(
+                                'Belum ada bin di gudang ini. Tambahkan untuk mengisi stok awal.',
+                                style: const TextStyle(color: Colors.orangeAccent),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+              ],
             ],
           ),
         ),
@@ -710,9 +892,45 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
                     'stock': int.tryParse(_stockController.text) ?? 0,
                     'category': _categoryController.text,
                     'sku': _skuController.text.isEmpty ? null : _skuController.text,
+                    'unit': _unit,
+                    'volumePerUnit': _volumePerUnit,
+                    'volumeUnit': _volumeUnit,
                   };
                   if (widget.product == null) {
-                    await provider.addProduct(productMap, userId: _userId, userName: _userName);
+                    final newProductId = await provider.addProduct(productMap, userId: _userId, userName: _userName);
+                    final initialQty = (productMap['stock'] ?? 0) as int;
+                    if (initialQty > 0 && (_selectedWarehouseId?.isNotEmpty ?? false)) {
+                      if ((_selectedBinId ?? '').isEmpty) {
+                        setState(() => _isLoading = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Pilih Bin untuk stok awal > 0')),
+                        );
+                        return;
+                      }
+                      final invRepo = InventoryRepository();
+                      await invRepo.receiveStockInBin(
+                        warehouseId: _selectedWarehouseId!,
+                        binId: _selectedBinId!,
+                        productId: newProductId,
+                        quantity: initialQty,
+                      );
+                      // Log stok awal ke stock_logs
+                      await FirestoreService().addStockLog({
+                        'productId': newProductId,
+                        'productName': _nameController.text,
+                        'category': _categoryController.text,
+                        'type': 'in',
+                        'qty': initialQty,
+                        'before': 0,
+                        'after': initialQty,
+                        'userId': _userId,
+                        'userName': _userName,
+                        'warehouseId': _selectedWarehouseId,
+                        'binId': _selectedBinId,
+                        'desc': 'Stok awal saat tambah produk',
+                        'timestamp': FieldValue.serverTimestamp(),
+                      });
+                    }
                   } else {
                     await provider.updateProduct(widget.product!.id, productMap, userId: _userId, userName: _userName);
                   }
@@ -737,6 +955,9 @@ class _InventoryStockMutationPageState extends State<InventoryStockMutationPage>
   final FirestoreService _firestoreService = FirestoreService();
   String? _selectedProductId;
   String _mutationType = 'in';
+  String? _toWarehouseId; // untuk transfer antar gudang
+  String? _selectedBinId; // bin asal untuk in/out dan transfer
+  String? _selectedDestinationBinId; // bin tujuan untuk transfer
   final _qtyController = TextEditingController();
   final _descController = TextEditingController();
   bool _isLoading = false;
@@ -842,10 +1063,97 @@ class _InventoryStockMutationPageState extends State<InventoryStockMutationPage>
             items: const [
               DropdownMenuItem(value: 'in', child: Text('Stok Masuk')),
               DropdownMenuItem(value: 'out', child: Text('Stok Keluar')),
+              DropdownMenuItem(value: 'transfer', child: Text('Transfer Antar Gudang')),
             ],
             onChanged: (val) => setState(() => _mutationType = val ?? 'in'),
             decoration: const InputDecoration(labelText: 'Tipe Mutasi'),
           ),
+          // Dropdown Bin untuk tipe in/out (gunakan gudang aktif)
+          if (_mutationType != 'transfer') ...[
+            const SizedBox(height: 12),
+            Builder(builder: (context) {
+              final activeWarehouseId = Provider.of<ActiveWarehouseProvider>(context).activeWarehouseId;
+              if (activeWarehouseId == null || activeWarehouseId.isEmpty) {
+                return const Text('Pilih gudang aktif terlebih dahulu');
+              }
+              return StreamBuilder<List<BinModel>>(
+                stream: BinRepository().watchByWarehouse(activeWarehouseId),
+                builder: (context, snapshot) {
+                  final bins = snapshot.data ?? const [];
+                  final items = bins
+                      .map((b) => DropdownMenuItem<String>(value: b.binId, child: Text(b.name)))
+                      .toList();
+                  return DropdownButtonFormField<String>(
+                    value: _selectedBinId,
+                    items: items,
+                    onChanged: (val) => setState(() => _selectedBinId = val),
+                    decoration: const InputDecoration(labelText: 'Pilih Bin'),
+                  );
+                },
+              );
+            }),
+          ],
+          if (_mutationType == 'transfer') ...[
+            const SizedBox(height: 12),
+            StreamBuilder<List<WarehouseModel>>(
+              stream: WarehouseRepository().watchAll(),
+              builder: (context, snapshot) {
+                final warehouses = snapshot.data ?? const [];
+                final activeWarehouseId = Provider.of<ActiveWarehouseProvider>(context).activeWarehouseId;
+                final items = warehouses
+                    .where((w) => w.warehouseId != activeWarehouseId)
+                    .map((w) => DropdownMenuItem(value: w.warehouseId, child: Text(w.name)))
+                    .toList();
+                return DropdownButtonFormField<String>(
+                  value: _toWarehouseId,
+                  items: items,
+                  onChanged: (val) => setState(() => _toWarehouseId = val),
+                  decoration: const InputDecoration(labelText: 'Gudang Tujuan'),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            // Bin asal (gudang aktif)
+            Builder(builder: (context) {
+              final activeWarehouseId = Provider.of<ActiveWarehouseProvider>(context).activeWarehouseId;
+              if (activeWarehouseId == null || activeWarehouseId.isEmpty) {
+                return const Text('Pilih gudang aktif terlebih dahulu');
+              }
+              return StreamBuilder<List<BinModel>>(
+                stream: BinRepository().watchByWarehouse(activeWarehouseId),
+                builder: (context, snapshot) {
+                  final bins = snapshot.data ?? const [];
+                  final items = bins
+                      .map((b) => DropdownMenuItem<String>(value: b.binId, child: Text('${b.name} (Asal)')))
+                      .toList();
+                  return DropdownButtonFormField<String>(
+                    value: _selectedBinId,
+                    items: items,
+                    onChanged: (val) => setState(() => _selectedBinId = val),
+                    decoration: const InputDecoration(labelText: 'Bin Asal'),
+                  );
+                },
+              );
+            }),
+            const SizedBox(height: 12),
+            // Bin tujuan (gudang tujuan)
+            if (_toWarehouseId != null && _toWarehouseId!.isNotEmpty)
+              StreamBuilder<List<BinModel>>(
+                stream: BinRepository().watchByWarehouse(_toWarehouseId!),
+                builder: (context, snapshot) {
+                  final bins = snapshot.data ?? const [];
+                  final items = bins
+                      .map((b) => DropdownMenuItem<String>(value: b.binId, child: Text('${b.name} (Tujuan)')))
+                      .toList();
+                  return DropdownButtonFormField<String>(
+                    value: _selectedDestinationBinId,
+                    items: items,
+                    onChanged: (val) => setState(() => _selectedDestinationBinId = val),
+                    decoration: const InputDecoration(labelText: 'Bin Tujuan'),
+                  );
+                },
+              ),
+          ],
           const SizedBox(height: 12),
           TextFormField(
             controller: _qtyController,
@@ -866,50 +1174,160 @@ class _InventoryStockMutationPageState extends State<InventoryStockMutationPage>
                     setState(() => _isLoading = true);
                     final qty = int.tryParse(_qtyController.text) ?? 0;
                     final isIn = _mutationType == 'in';
-                    // Update stok produk
-                    final product = await _firestoreService.getProduct(_selectedProductId!);
-                    if (product != null) {
-                      final before = product.stock;
-                      final newStock = isIn ? product.stock + qty : product.stock - qty;
-                      // Validasi stok keluar tidak boleh melebihi stok
-                      if (!isIn && qty > product.stock) {
+                    final isTransfer = _mutationType == 'transfer';
+                    try {
+                      final activeWarehouseId = Provider.of<ActiveWarehouseProvider>(context, listen: false).activeWarehouseId;
+                      if (activeWarehouseId == null || activeWarehouseId.isEmpty) {
                         setState(() => _isLoading = false);
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Stok Tidak Cukup'),
-                            content: const Text('Jumlah stok keluar melebihi stok yang tersedia!'),
-                            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
-                          ),
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Pilih gudang terlebih dahulu')),
                         );
                         return;
                       }
-                      final updatedProduct = product.copyWith(
-                        stock: newStock,
-                        updatedAt: DateTime.now(),
+                      // Validasi bin selection
+                      if (!isTransfer) {
+                        if (_selectedBinId == null || _selectedBinId!.isEmpty) {
+                          setState(() => _isLoading = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Pilih bin untuk mutasi')),
+                          );
+                          return;
+                        }
+                      }
+                      if (isTransfer && (_toWarehouseId == null || _toWarehouseId!.isEmpty)) {
+                        setState(() => _isLoading = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Pilih gudang tujuan untuk transfer')),
+                        );
+                        return;
+                      }
+                      if (isTransfer && (_selectedBinId == null || _selectedDestinationBinId == null)) {
+                        setState(() => _isLoading = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Pilih bin asal dan bin tujuan untuk transfer')),
+                        );
+                        return;
+                      }
+
+                      // Update stok per gudang via InventoryRepository
+                      final product = await _firestoreService.getProduct(_selectedProductId!);
+                      if (product == null) {
+                        setState(() => _isLoading = false);
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Produk tidak ditemukan')));
+                        return;
+                      }
+
+                      final invRepo = InventoryRepository();
+                      if (isTransfer) {
+                        // Issue dari bin asal gudang aktif, lalu receive ke bin tujuan gudang tujuan
+                        await invRepo.issueStockInBin(
+                          warehouseId: activeWarehouseId,
+                          binId: _selectedBinId!,
+                          productId: product.id,
+                          quantity: qty,
+                        );
+                        await invRepo.receiveStockInBin(
+                          warehouseId: _toWarehouseId!,
+                          binId: _selectedDestinationBinId!,
+                          productId: product.id,
+                          quantity: qty,
+                        );
+                      } else if (isIn) {
+                        await invRepo.receiveStockInBin(
+                          warehouseId: activeWarehouseId,
+                          binId: _selectedBinId!,
+                          productId: product.id,
+                          quantity: qty,
+                        );
+                      } else {
+                        await invRepo.issueStockInBin(
+                          warehouseId: activeWarehouseId,
+                          binId: _selectedBinId!,
+                          productId: product.id,
+                          quantity: qty,
+                        );
+                      }
+
+                      // Sinkronkan stok agregat produk untuk tampilan daftar (transfer tidak mengubah agregat)
+                      if (!isTransfer) {
+                        await _firestoreService.updateStock(
+                          product.id,
+                          isIn ? qty : -qty,
+                          userId: _userId,
+                          userName: _userName,
+                          warehouseId: activeWarehouseId,
+                        );
+                      }
+
+                      // Simpan log mutasi
+                      final before = product.stock;
+                      if (isTransfer) {
+                        await _firestoreService.addStockLog({
+                          'productId': product.id,
+                          'productName': product.name,
+                          'category': product.category,
+                          'type': 'out',
+                          'qty': qty,
+                          'before': before,
+                          'after': before, // agregat tidak berubah
+                          'userId': _userId,
+                          'userName': _userName,
+                          'warehouseId': activeWarehouseId,
+                          'binId': _selectedBinId,
+                          'desc': 'Transfer ke gudang $_toWarehouseId. ${_descController.text}',
+                          'timestamp': FieldValue.serverTimestamp(),
+                        });
+                        await _firestoreService.addStockLog({
+                          'productId': product.id,
+                          'productName': product.name,
+                          'category': product.category,
+                          'type': 'in',
+                          'qty': qty,
+                          'before': before,
+                          'after': before,
+                          'userId': _userId,
+                          'userName': _userName,
+                          'warehouseId': _toWarehouseId,
+                          'binId': _selectedDestinationBinId,
+                          'desc': 'Transfer dari gudang $activeWarehouseId. ${_descController.text}',
+                          'timestamp': FieldValue.serverTimestamp(),
+                        });
+                      } else {
+                        final after = isIn ? (before + qty) : (before - qty);
+                        await _firestoreService.addStockLog({
+                          'productId': product.id,
+                          'productName': product.name,
+                          'category': product.category,
+                          'type': isIn ? 'in' : 'out',
+                          'qty': qty,
+                          'before': before,
+                          'after': after,
+                          'userId': _userId,
+                          'userName': _userName,
+                          'warehouseId': activeWarehouseId,
+                          'binId': _selectedBinId,
+                          'desc': _descController.text,
+                          'timestamp': FieldValue.serverTimestamp(),
+                        });
+                      }
+
+                      setState(() => _isLoading = false);
+                      _qtyController.clear();
+                      _descController.clear();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Mutasi stok berhasil')),
                       );
-                      await context.read<InventoryProvider>().updateStock(product.id, isIn ? qty : -qty, userId: _userId, userName: _userName);
-                      // Simpan ke stock_logs
-                      await _firestoreService.addStockLog({
-                        'productId': product.id,
-                        'productName': product.name,
-                        'category': product.category,
-                        'type': isIn ? 'in' : 'out',
-                        'qty': qty,
-                        'before': before,
-                        'after': newStock,
-                        'userId': _userId,
-                        'userName': _userName,
-                        'desc': _descController.text,
-                        'timestamp': DateTime.now(),
-                      });
+                    } catch (e) {
+                      setState(() => _isLoading = false);
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Gagal Mutasi Stok'),
+                          content: Text('Error: $e'),
+                          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+                        ),
+                      );
                     }
-                    setState(() => _isLoading = false);
-                    _qtyController.clear();
-                    _descController.clear();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Mutasi stok berhasil')),
-                    );
                   },
             child: _isLoading ? const CircularProgressIndicator() : const Text('Simpan Mutasi'),
           ),
@@ -924,8 +1342,9 @@ class InventoryStockHistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final FirestoreService _firestoreService = FirestoreService();
+    final activeWarehouseId = Provider.of<ActiveWarehouseProvider>(context).activeWarehouseId;
     return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: _firestoreService.getStockLogsStream(),
+      stream: _firestoreService.getStockLogsStream(warehouseId: activeWarehouseId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
@@ -951,7 +1370,7 @@ class InventoryStockHistoryPage extends StatelessWidget {
               child: ListTile(
                 leading: Icon(log['type'] == 'in' ? Icons.arrow_downward : Icons.arrow_upward, color: log['type'] == 'in' ? Colors.green : Colors.red),
                 title: Text('${log['productName']} (${log['category']})'),
-                subtitle: Text('Jumlah: ${log['qty']} | Sebelum: ${log['before']} | Sesudah: ${log['after']}\nOleh: ${log['userName']}\n${log['desc'] ?? ''}'),
+                subtitle: Text('Jumlah: ${log['qty']} | Sebelum: ${log['before']} | Sesudah: ${log['after']}\nGudang: ${log['warehouseId'] ?? '-'} | Bin: ${log['binId'] ?? '-'} | Oleh: ${log['userName']}\n${log['desc'] ?? ''}'),
                 trailing: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -986,6 +1405,7 @@ class InventoryStockHistoryPage extends StatelessWidget {
             _detailRow('Jumlah', log['qty'].toString()),
             _detailRow('Sebelum', log['before'].toString()),
             _detailRow('Sesudah', log['after'].toString()),
+            _detailRow('Gudang', log['warehouseId']),
             _detailRow('User', log['userName']),
             _detailRow('Tanggal', '${dt.day}/${dt.month}/${dt.year}'),
             _detailRow('Jam', '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}'),

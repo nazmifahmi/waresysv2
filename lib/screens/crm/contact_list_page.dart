@@ -383,16 +383,13 @@ class _ContactListPageState extends ConsumerState<ContactListPage> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingS, vertical: AppTheme.spacingXS),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withOpacity(0.25),
         borderRadius: BorderRadius.circular(AppTheme.radiusS),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withOpacity(0.7)),
       ),
       child: Text(
         label,
-        style: AppTheme.labelSmall.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
+        style: AppTheme.labelSmall.copyWith(color: Colors.white, fontWeight: FontWeight.w600),
       ),
     );
   }

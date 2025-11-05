@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/crm/lead_model.dart';
 import '../../providers/crm/lead_provider.dart';
 import '../../constants/theme.dart';
+import '../../widgets/common_widgets.dart';
 
 class LeadFormPage extends ConsumerStatefulWidget {
   final LeadModel? lead;
@@ -88,44 +89,17 @@ class _LeadFormPageState extends ConsumerState<LeadFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryGreen,
-        title: Text(
-          widget.isEdit ? 'Edit Lead' : 'Tambah Lead',
-          style: AppTheme.heading4.copyWith(color: Colors.white),
-        ),
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
+      backgroundColor: AppTheme.backgroundDark,
+      appBar: CommonWidgets.buildAppBar(
+        title: widget.isEdit ? 'Edit Lead' : 'Tambah Lead',
+        onBackPressed: () => Navigator.of(context).pop(),
         actions: [
-          if (_isLoading)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppTheme.spacingL),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-              ),
-            )
-          else
-            TextButton(
-              onPressed: _saveLead,
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
-              ),
-              child: Text(
-                'Simpan',
-                style: AppTheme.labelLarge.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+          CommonWidgets.buildAppBarAction(
+            text: 'Simpan',
+            icon: Icons.save,
+            isLoading: _isLoading,
+            onPressed: _saveLead,
+          ),
         ],
       ),
       body: Form(
@@ -156,403 +130,290 @@ class _LeadFormPageState extends ConsumerState<LeadFormPage> {
   }
 
   Widget _buildBasicInfoSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Informasi Dasar',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nama Lengkap *',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Nama harus diisi';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _companyController,
-              decoration: const InputDecoration(
-                labelText: 'Perusahaan',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _positionController,
-              decoration: const InputDecoration(
-                labelText: 'Posisi/Jabatan',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _industryController,
-              decoration: const InputDecoration(
-                labelText: 'Industri',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Informasi Dasar',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CommonWidgets.buildTextField(
+            label: 'Nama Lengkap *',
+            controller: _nameController,
+            prefixIcon: Icons.person,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Nama harus diisi';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: AppTheme.spacingL),
+          CommonWidgets.buildTextField(
+            label: 'Perusahaan',
+            controller: _companyController,
+            prefixIcon: Icons.business,
+          ),
+          const SizedBox(height: AppTheme.spacingL),
+          CommonWidgets.buildTextField(
+            label: 'Posisi/Jabatan',
+            controller: _positionController,
+            prefixIcon: Icons.badge,
+          ),
+          const SizedBox(height: AppTheme.spacingL),
+          CommonWidgets.buildTextField(
+            label: 'Industri',
+            controller: _industryController,
+            prefixIcon: Icons.category,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildContactInfoSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Informasi Kontak',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email *',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Email harus diisi';
-                }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                  return 'Format email tidak valid';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _phoneController,
-              decoration: const InputDecoration(
-                labelText: 'Nomor Telepon *',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.phone,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Nomor telepon harus diisi';
-                }
-                return null;
-              },
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Informasi Kontak',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CommonWidgets.buildTextField(
+            label: 'Email *',
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            prefixIcon: Icons.email,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Email harus diisi';
+              }
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                return 'Format email tidak valid';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: AppTheme.spacingL),
+          CommonWidgets.buildTextField(
+            label: 'Nomor Telepon *',
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            prefixIcon: Icons.phone,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Nomor telepon harus diisi';
+              }
+              return null;
+            },
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildLeadDetailsSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Detail Lead',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            DropdownButtonFormField<LeadStatus>(
-              value: _selectedStatus,
-              decoration: const InputDecoration(
-                labelText: 'Status',
-                border: OutlineInputBorder(),
-              ),
-              items: LeadStatus.values.map((status) {
-                return DropdownMenuItem(
-                  value: status,
-                  child: Text(_getStatusLabel(status)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedStatus = value!;
-                });
-              },
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            DropdownButtonFormField<LeadSource>(
-              value: _selectedSource,
-              decoration: const InputDecoration(
-                labelText: 'Sumber',
-                border: OutlineInputBorder(),
-              ),
-              items: LeadSource.values.map((source) {
-                return DropdownMenuItem(
-                  value: source,
-                  child: Text(_getSourceLabel(source)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedSource = value!;
-                });
-              },
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<LeadPriority>(
-                    value: _selectedPriority,
-                    decoration: const InputDecoration(
-                      labelText: 'Prioritas',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: LeadPriority.values.map((priority) {
-                      return DropdownMenuItem(
-                        value: priority,
-                        child: Text(_getPriorityLabel(priority)),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedPriority = value!;
-                      });
-                    },
-                  ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Detail Lead',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DropdownButtonFormField<LeadStatus>(
+            value: _selectedStatus,
+            decoration: AppTheme.inputDecoration('Status'),
+            items: LeadStatus.values.map((status) {
+              return DropdownMenuItem(
+                value: status,
+                child: Text(_getStatusLabel(status)),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedStatus = value!;
+              });
+            },
+          ),
+          const SizedBox(height: AppTheme.spacingL),
+          DropdownButtonFormField<LeadSource>(
+            value: _selectedSource,
+            decoration: AppTheme.inputDecoration('Sumber'),
+            items: LeadSource.values.map((source) {
+              return DropdownMenuItem(
+                value: source,
+                child: Text(_getSourceLabel(source)),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedSource = value!;
+              });
+            },
+          ),
+          const SizedBox(height: AppTheme.spacingL),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<LeadPriority>(
+                  value: _selectedPriority,
+                  decoration: AppTheme.inputDecoration('Prioritas'),
+                  items: LeadPriority.values.map((priority) {
+                    return DropdownMenuItem(
+                      value: priority,
+                      child: Text(_getPriorityLabel(priority)),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedPriority = value!;
+                    });
+                  },
                 ),
-                SizedBox(width: AppTheme.spacingL),
-                Expanded(
-                  child: DropdownButtonFormField<LeadQuality>(
-                    value: _selectedQuality,
-                    decoration: const InputDecoration(
-                      labelText: 'Kualitas',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: LeadQuality.values.map((quality) {
-                      return DropdownMenuItem(
-                        value: quality,
-                        child: Text(_getQualityLabel(quality)),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedQuality = value!;
-                      });
-                    },
-                  ),
+              ),
+              const SizedBox(width: AppTheme.spacingL),
+              Expanded(
+                child: DropdownButtonFormField<LeadQuality>(
+                  value: _selectedQuality,
+                  decoration: AppTheme.inputDecoration('Kualitas'),
+                  items: LeadQuality.values.map((quality) {
+                    return DropdownMenuItem(
+                      value: quality,
+                      child: Text(_getQualityLabel(quality)),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedQuality = value!;
+                    });
+                  },
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildValueSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Nilai & Probabilitas',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Nilai & Probabilitas',
+      child: Row(
+        children: [
+          Expanded(
+            child: CommonWidgets.buildTextField(
+              label: 'Estimasi Nilai (Rp)',
+              controller: _estimatedValueController,
+              keyboardType: TextInputType.number,
+              prefixIcon: Icons.attach_money,
+              validator: (value) {
+                if (value != null && value.isNotEmpty) {
+                  final number = double.tryParse(value);
+                  if (number == null || number < 0) {
+                    return 'Nilai harus berupa angka positif';
+                  }
+                }
+                return null;
+              },
             ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _estimatedValueController,
-                    decoration: const InputDecoration(
-                      labelText: 'Estimasi Nilai (Rp)',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        final number = double.tryParse(value);
-                        if (number == null || number < 0) {
-                          return 'Nilai harus berupa angka positif';
-                        }
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                SizedBox(width: AppTheme.spacingL),
-                Expanded(
-                  child: TextFormField(
-                    controller: _probabilityController,
-                    decoration: const InputDecoration(
-                      labelText: 'Probabilitas (%)',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        final number = int.tryParse(value);
-                        if (number == null || number < 0 || number > 100) {
-                          return 'Probabilitas harus 0-100';
-                        }
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ],
+          ),
+          const SizedBox(width: AppTheme.spacingL),
+          Expanded(
+            child: CommonWidgets.buildTextField(
+              label: 'Probabilitas (%)',
+              controller: _probabilityController,
+              keyboardType: TextInputType.number,
+              prefixIcon: Icons.percent,
+              validator: (value) {
+                if (value != null && value.isNotEmpty) {
+                  final number = int.tryParse(value);
+                  if (number == null || number < 0 || number > 100) {
+                    return 'Probabilitas harus 0-100';
+                  }
+                }
+                return null;
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildDatesSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tanggal Penting',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
+    return CommonWidgets.buildSectionCard(
+      title: 'Tanggal Penting',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => _selectDate(context, true),
+            child: InputDecorator(
+              decoration: AppTheme.inputDecoration('Perkiraan Tanggal Closing'),
+              child: Text(
+                _expectedCloseDate != null
+                    ? _formatDate(_expectedCloseDate!)
+                    : 'Pilih tanggal',
               ),
             ),
-            SizedBox(height: AppTheme.spacingL),
-            InkWell(
-              onTap: () => _selectDate(context, true),
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Perkiraan Tanggal Closing',
-                  border: OutlineInputBorder(),
-                ),
-                child: Text(
-                  _expectedCloseDate != null
-                      ? _formatDate(_expectedCloseDate!)
-                      : 'Pilih tanggal',
-                ),
+          ),
+          const SizedBox(height: AppTheme.spacingL),
+          InkWell(
+            onTap: () => _selectDate(context, false),
+            child: InputDecorator(
+              decoration: AppTheme.inputDecoration('Follow-up Berikutnya'),
+              child: Text(
+                _nextFollowUpDate != null
+                    ? _formatDate(_nextFollowUpDate!)
+                    : 'Pilih tanggal',
               ),
             ),
-            SizedBox(height: AppTheme.spacingL),
-            InkWell(
-              onTap: () => _selectDate(context, false),
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Follow-up Berikutnya',
-                  border: OutlineInputBorder(),
-                ),
-                child: Text(
-                  _nextFollowUpDate != null
-                      ? _formatDate(_nextFollowUpDate!)
-                      : 'Pilih tanggal',
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildTagsSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tags',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Tags',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CommonWidgets.buildTextField(
+            label: 'Tags (pisahkan dengan koma)',
+            hint: 'hot lead, enterprise, urgent',
+            controller: _tagsController,
+            prefixIcon: Icons.sell,
+            onChanged: (value) {
+              _tags = value
+                  .split(',')
+                  .map((tag) => tag.trim())
+                  .where((tag) => tag.isNotEmpty)
+                  .toList();
+            },
+          ),
+          if (_tags.isNotEmpty) ...[
+            const SizedBox(height: AppTheme.spacingM),
+            Wrap(
+              spacing: AppTheme.spacingS,
+              runSpacing: AppTheme.spacingS,
+              children: _tags.map((tag) {
+                return CommonWidgets.buildChip(
+                  text: tag,
+                  color: AppTheme.primaryGreen,
+                );
+              }).toList(),
             ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _tagsController,
-              decoration: const InputDecoration(
-                labelText: 'Tags (pisahkan dengan koma)',
-                border: OutlineInputBorder(),
-                hintText: 'hot lead, enterprise, urgent',
-              ),
-              onChanged: (value) {
-                _tags = value.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
-              },
-            ),
-            if (_tags.isNotEmpty) ...[
-              SizedBox(height: AppTheme.spacingM),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _tags.map((tag) {
-                  return Chip(
-                    label: Text(tag),
-                    backgroundColor: AppTheme.primaryGreen.withOpacity(0.1),
-                    onDeleted: () {
-                      setState(() {
-                        _tags.remove(tag);
-                        _tagsController.text = _tags.join(', ');
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
           ],
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildNotesSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Catatan',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Catatan tambahan',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 4,
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Catatan',
+      child: CommonWidgets.buildTextField(
+        label: 'Catatan tambahan',
+        controller: _notesController,
+        prefixIcon: Icons.note,
+        maxLines: 4,
       ),
     );
   }

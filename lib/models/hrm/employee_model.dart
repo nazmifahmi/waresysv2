@@ -48,14 +48,22 @@ class EmployeeModel {
       };
 
   factory EmployeeModel.fromMap(Map<String, dynamic> map) => EmployeeModel(
-        employeeId: map['employeeId'],
-        userId: map['userId'],
-        fullName: map['fullName'],
-        position: map['position'],
-        department: map['department'] ?? '',
-        joinDate: (map['joinDate'] as Timestamp).toDate(),
-        salary: (map['salary'] as num).toDouble(),
-        contractUrl: map['contractUrl'],
+        employeeId: map['employeeId']?.toString() ?? '',
+        userId: map['userId']?.toString() ?? '',
+        fullName: (map['fullName']?.toString().trim().isNotEmpty == true)
+            ? map['fullName'].toString().trim()
+            : 'Unknown',
+        position: (map['position']?.toString().trim().isNotEmpty == true)
+            ? map['position'].toString().trim()
+            : 'N/A',
+        department: (map['department']?.toString().trim().isNotEmpty == true)
+            ? map['department'].toString().trim()
+            : 'N/A',
+        joinDate: (map['joinDate'] is Timestamp)
+            ? (map['joinDate'] as Timestamp).toDate()
+            : DateTime.now(),
+        salary: (map['salary'] as num?)?.toDouble() ?? 0.0,
+        contractUrl: map['contractUrl']?.toString(),
         status: EmployeeStatus.values.firstWhere(
           (e) => e.name == (map['status'] ?? EmployeeStatus.active.name),
           orElse: () => EmployeeStatus.active,
@@ -64,7 +72,7 @@ class EmployeeModel {
           (e) => e.name == (map['role'] ?? EmployeeRole.employee.name),
           orElse: () => EmployeeRole.employee,
         ),
-        leaveBalance: map['leaveBalance'] ?? 12,
+        leaveBalance: (map['leaveBalance'] is int) ? map['leaveBalance'] as int : 12,
       );
 
   factory EmployeeModel.fromDoc(DocumentSnapshot doc) =>

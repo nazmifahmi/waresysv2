@@ -9,6 +9,7 @@ class DeliveryOrderModel {
   final String? courierName;
   final String? trackingNumber;
   final String? shippingLabelUrl;
+  final String? warehouseId; // gudang pengambilan
 
   DeliveryOrderModel({
     required this.deliveryId,
@@ -17,16 +18,18 @@ class DeliveryOrderModel {
     this.courierName,
     this.trackingNumber,
     this.shippingLabelUrl,
+    this.warehouseId,
   });
 
   Map<String, dynamic> toMap() => {
         'deliveryId': deliveryId,
         'salesOrderId': salesOrderId,
         'status': status.name,
-        'courierName': courierName,
-        'trackingNumber': trackingNumber,
-        'shippingLabelUrl': shippingLabelUrl,
-      };
+      'courierName': courierName,
+      'trackingNumber': trackingNumber,
+      'shippingLabelUrl': shippingLabelUrl,
+      'warehouseId': warehouseId,
+    };
 
   factory DeliveryOrderModel.fromMap(Map<String, dynamic> map) => DeliveryOrderModel(
         deliveryId: map['deliveryId'],
@@ -35,6 +38,7 @@ class DeliveryOrderModel {
         courierName: map['courierName'],
         trackingNumber: map['trackingNumber'],
         shippingLabelUrl: map['shippingLabelUrl'],
+        warehouseId: map['warehouseId'],
       );
 
   factory DeliveryOrderModel.fromDoc(DocumentSnapshot doc) =>

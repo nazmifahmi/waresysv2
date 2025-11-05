@@ -4,6 +4,7 @@ import '../../models/crm/customer_model.dart';
 import '../../providers/crm/customer_provider.dart';
 import '../../constants/theme.dart';
 import 'customer_form_page.dart';
+import '../../widgets/common_widgets.dart';
 
 class CustomerDetailPage extends ConsumerWidget {
   final CustomerModel customer;
@@ -16,40 +17,20 @@ class CustomerDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryGreen,
-        title: Text(
-          'Detail Customer',
-          style: AppTheme.heading4.copyWith(color: Colors.white),
-        ),
-        foregroundColor: Colors.white,
+      backgroundColor: AppTheme.backgroundDark,
+      appBar: CommonWidgets.buildAppBar(
+        title: 'Detail Customer',
+        onBackPressed: () => Navigator.of(context).pop(),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
+          CommonWidgets.buildAppBarAction(
+            text: 'Edit',
+            icon: Icons.edit,
             onPressed: () => _editCustomer(context),
           ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              switch (value) {
-                case 'delete':
-                  _showDeleteDialog(context, ref);
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Hapus Customer'),
-                  ],
-                ),
-              ),
-            ],
+          CommonWidgets.buildAppBarAction(
+            text: 'Hapus',
+            icon: Icons.delete,
+            onPressed: () => _showDeleteDialog(context, ref),
           ),
         ],
       ),
@@ -78,284 +59,177 @@ class CustomerDetailPage extends ConsumerWidget {
   }
 
   Widget _buildHeaderCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: AppTheme.primaryGreen,
-                  child: Text(
-                    customer.name.isNotEmpty ? customer.name[0].toUpperCase() : 'C',
-                    style: AppTheme.heading3.copyWith(
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                SizedBox(width: AppTheme.spacingL),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        customer.displayName,
-                        style: AppTheme.heading3.copyWith(
-                          color: AppTheme.textPrimaryLight,
-                        ),
-                      ),
-                      if (customer.position != null)
-                        Text(
-                          customer.position!,
-                          style: AppTheme.bodyMedium.copyWith(
-                            color: AppTheme.textSecondaryLight,
-                          ),
-                        ),
-                      SizedBox(height: AppTheme.spacingS),
-                      Row(
-                        children: [
-                          _buildStatusChip(customer.status),
-                          SizedBox(width: AppTheme.spacingS),
-                          _buildSegmentChip(customer.segment),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
+    return CommonWidgets.buildDetailHeader(
+      title: customer.displayName,
+      subtitle: customer.position,
+      avatarColor: AppTheme.primaryGreen,
+      chips: [
+        CommonWidgets.buildChip(
+          text: _getStatusLabel(customer.status),
+          color: AppTheme.successColor,
         ),
-      ),
+        CommonWidgets.buildChip(
+          text: _getSegmentLabel(customer.segment),
+          color: AppTheme.accentPurple,
+        ),
+      ],
     );
   }
 
   Widget _buildContactInfoCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Informasi Kontak',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            _buildInfoRow(Icons.email, 'Email', customer.email),
+    return CommonWidgets.buildSectionCard(
+      title: 'Informasi Kontak',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInfoRow(Icons.email, 'Email', customer.email),
+          SizedBox(height: AppTheme.spacingM),
+          _buildInfoRow(Icons.phone, 'Telepon', customer.phone),
+          if (customer.company != null) ...[
             SizedBox(height: AppTheme.spacingM),
-            _buildInfoRow(Icons.phone, 'Telepon', customer.phone),
-            if (customer.company != null) ...[
-              SizedBox(height: AppTheme.spacingM),
-              _buildInfoRow(Icons.business, 'Perusahaan', customer.company!),
-            ],
+            _buildInfoRow(Icons.business, 'Perusahaan', customer.company!),
           ],
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildAddressCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Alamat',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Text(
-              customer.fullAddress,
-              style: AppTheme.bodyMedium.copyWith(
-                color: AppTheme.textPrimaryLight,
-              ),
-            ),
-          ],
+    return CommonWidgets.buildSectionCard(
+      title: 'Alamat',
+      child: Text(
+        customer.fullAddress,
+        style: AppTheme.bodyMedium.copyWith(
+          color: AppTheme.textPrimary,
         ),
       ),
     );
   }
 
   Widget _buildCategoryCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Kategori',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
+    return CommonWidgets.buildSectionCard(
+      title: 'Kategori',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _buildInfoItem('Status', _getStatusLabel(customer.status)),
               ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildInfoItem('Status', _getStatusLabel(customer.status)),
-                ),
-                Expanded(
-                  child: _buildInfoItem('Segmen', _getSegmentLabel(customer.segment)),
-                ),
-              ],
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            _buildInfoItem('Sumber', _getSourceLabel(customer.source)),
-          ],
-        ),
+              Expanded(
+                child: _buildInfoItem('Segmen', _getSegmentLabel(customer.segment)),
+              ),
+            ],
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          _buildInfoItem('Sumber', _getSourceLabel(customer.source)),
+        ],
       ),
     );
   }
 
   Widget _buildStatisticsCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Statistik',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
+    return CommonWidgets.buildSectionCard(
+      title: 'Statistik',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: AppTheme.spacingS),
+                  child: _buildStatItem(
+                    'Total Pembelian',
+                    'Rp ${customer.totalPurchases.toStringAsFixed(0)}',
+                    Icons.attach_money,
+                    AppTheme.successColor,
+                  ),
+                ),
               ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(right: AppTheme.spacingS),
-                    child: _buildStatItem(
-                      'Total Pembelian',
-                      'Rp ${customer.totalPurchases.toStringAsFixed(0)}',
-                      Icons.attach_money,
-                      AppTheme.successColor,
-                    ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(left: AppTheme.spacingS),
+                  child: _buildStatItem(
+                    'Total Order',
+                    customer.totalOrders.toString(),
+                    Icons.shopping_cart,
+                    AppTheme.infoColor,
                   ),
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(left: AppTheme.spacingS),
-                    child: _buildStatItem(
-                      'Total Order',
-                      customer.totalOrders.toString(),
-                      Icons.shopping_cart,
-                      AppTheme.infoColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(right: AppTheme.spacingS),
-                    child: _buildStatItem(
-                      'Rata-rata Order',
-                      'Rp ${customer.averageOrderValue.toStringAsFixed(0)}',
-                      Icons.trending_up,
-                      AppTheme.accentPurple,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(left: AppTheme.spacingS),
-                    child: _buildStatItem(
-                      'Status Risiko',
-                      customer.isAtRisk ? 'Berisiko' : 'Aman',
-                      Icons.warning,
-                      customer.isAtRisk ? AppTheme.errorColor : AppTheme.successColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (customer.lastPurchaseDate != null) ...[
-              SizedBox(height: AppTheme.spacingL),
-              _buildInfoItem(
-                'Pembelian Terakhir',
-                _formatDate(customer.lastPurchaseDate!),
               ),
             ],
-            if (customer.lastContactDate != null) ...[
-              SizedBox(height: AppTheme.spacingS),
-              _buildInfoItem(
-                'Kontak Terakhir',
-                _formatDate(customer.lastContactDate!),
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: AppTheme.spacingS),
+                  child: _buildStatItem(
+                    'Rata-rata Order',
+                    'Rp ${customer.averageOrderValue.toStringAsFixed(0)}',
+                    Icons.trending_up,
+                    AppTheme.accentPurple,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(left: AppTheme.spacingS),
+                  child: _buildStatItem(
+                    'Status Risiko',
+                    customer.isAtRisk ? 'Berisiko' : 'Aman',
+                    Icons.warning,
+                    customer.isAtRisk ? AppTheme.errorColor : AppTheme.successColor,
+                  ),
+                ),
               ),
             ],
+          ),
+          if (customer.lastPurchaseDate != null) ...[
+            SizedBox(height: AppTheme.spacingL),
+            _buildInfoItem(
+              'Pembelian Terakhir',
+              _formatDate(customer.lastPurchaseDate!),
+            ),
           ],
-        ),
+          if (customer.lastContactDate != null) ...[
+            SizedBox(height: AppTheme.spacingS),
+            _buildInfoItem(
+              'Kontak Terakhir',
+              _formatDate(customer.lastContactDate!),
+            ),
+          ],
+        ],
       ),
     );
   }
 
   Widget _buildTagsCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tags',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Wrap(
-              spacing: AppTheme.spacingS,
-              runSpacing: AppTheme.spacingS,
-              children: customer.tags.map((tag) {
-                return Chip(
-                  label: Text(tag),
-                  backgroundColor: AppTheme.primaryGreen.withOpacity(0.1),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Tags',
+      child: Wrap(
+        spacing: AppTheme.spacingS,
+        runSpacing: AppTheme.spacingS,
+        children: customer.tags.map((tag) {
+          return CommonWidgets.buildChip(
+            text: tag,
+            color: AppTheme.primaryGreen,
+          );
+        }).toList(),
       ),
     );
   }
 
   Widget _buildNotesCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Catatan',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Text(
-              customer.notes!,
-              style: AppTheme.bodyMedium.copyWith(
-                color: AppTheme.textPrimaryLight,
-              ),
-            ),
-          ],
+    return CommonWidgets.buildSectionCard(
+      title: 'Catatan',
+      child: Text(
+        customer.notes!,
+        style: AppTheme.bodyMedium.copyWith(
+          color: AppTheme.textPrimary,
         ),
       ),
     );
@@ -437,13 +311,13 @@ class CustomerDetailPage extends ConsumerWidget {
               Text(
                 label,
                 style: AppTheme.labelSmall.copyWith(
-                  color: AppTheme.textSecondaryLight,
+                  color: AppTheme.textPrimary,
                 ),
               ),
               Text(
                 value,
                 style: AppTheme.bodyMedium.copyWith(
-                  color: AppTheme.textPrimaryLight,
+                  color: AppTheme.textPrimary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -461,14 +335,14 @@ class CustomerDetailPage extends ConsumerWidget {
         Text(
           label,
           style: AppTheme.labelSmall.copyWith(
-            color: AppTheme.textSecondaryLight,
+            color: AppTheme.textPrimary,
           ),
         ),
         SizedBox(height: AppTheme.spacingXS),
         Text(
           value,
           style: AppTheme.bodyMedium.copyWith(
-            color: AppTheme.textPrimaryLight,
+            color: AppTheme.textPrimary,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -502,7 +376,7 @@ class CustomerDetailPage extends ConsumerWidget {
           Text(
             label,
             style: AppTheme.labelSmall.copyWith(
-              color: AppTheme.textSecondaryLight,
+              color: AppTheme.textPrimary,
             ),
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,

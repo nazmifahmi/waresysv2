@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../constants/theme.dart';
+import '../../widgets/common_widgets.dart';
 import '../../models/logistics/forecast_model.dart';
 import '../../services/logistics/forecast_repository.dart';
 import 'forecast_form_page.dart';
@@ -28,36 +30,31 @@ class _ForecastDashboardPageState extends State<ForecastDashboardPage> {
   }
 
   Future<void> _deleteForecast(ForecastModel forecast) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await CommonWidgets.showConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Konfirmasi Hapus'),
-        content: Text('Apakah Anda yakin ingin menghapus forecast "${forecast.category}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Hapus'),
-          ),
-        ],
-      ),
+      title: 'Konfirmasi Hapus',
+      content: 'Apakah Anda yakin ingin menghapus forecast "${forecast.category}"?',
+      confirmText: 'Hapus',
+      cancelText: 'Batal',
+      isDestructive: true,
     );
 
     if (confirmed == true) {
       try {
         await _repository.delete(forecast.forecastId);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Forecast berhasil dihapus')),
+          CommonWidgets.showSnackBar(
+            context: context,
+            message: 'Forecast berhasil dihapus',
+            type: SnackBarType.success,
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e')),
+          CommonWidgets.showSnackBar(
+            context: context,
+            message: 'Error: $e',
+            type: SnackBarType.error,
           );
         }
       }
@@ -65,9 +62,9 @@ class _ForecastDashboardPageState extends State<ForecastDashboardPage> {
   }
 
   Color _getAccuracyColor(double accuracy) {
-    if (accuracy >= 80) return Colors.green;
-    if (accuracy >= 60) return Colors.orange;
-    return Colors.red;
+    if (accuracy >= 80) return AppTheme.successColor;
+    if (accuracy >= 60) return AppTheme.warningColor;
+    return AppTheme.errorColor;
   }
 
   IconData _getCategoryIcon(String category) {
@@ -85,14 +82,30 @@ class _ForecastDashboardPageState extends State<ForecastDashboardPage> {
     }
   }
 
+  Color _getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'sales':
+        return AppTheme.accentBlue;
+      case 'stock':
+        return AppTheme.accentOrange;
+      case 'financial':
+        return AppTheme.accentPurple;
+      case 'demand':
+        return AppTheme.accentGreen;
+      default:
+        return AppTheme.accentBlue;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard Peramalan'),
+      backgroundColor: AppTheme.backgroundDark,
+      appBar: CommonWidgets.buildAppBar(
+        title: 'Dashboard Peramalan',
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add, color: AppTheme.textPrimary),
             onPressed: () => _openForm(),
           ),
         ],
@@ -100,15 +113,20 @@ class _ForecastDashboardPageState extends State<ForecastDashboardPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppTheme.spacingL),
             child: Column(
               children: [
-                TextField(
+                CommonWidgets.buildTextField(
+                  label: 'Cari forecast',
+                  hint: 'Kategori atau kata kunci...',
                   controller: _searchController,
-                  decoration: const InputDecoration(
-                    labelText: 'Cari forecast...',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
+                  prefixIcon: Icons.search,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.clear, color: AppTheme.textSecondary),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {});
+                    },
                   ),
                   onChanged: (value) {
                     setState(() {
@@ -116,13 +134,10 @@ class _ForecastDashboardPageState extends State<ForecastDashboardPage> {
                     });
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppTheme.spacingL),
                 DropdownButtonFormField<String>(
                   value: _selectedCategory,
-                  decoration: const InputDecoration(
-                    labelText: 'Filter Kategori',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: AppTheme.inputDecoration('Filter Kategori'),
                   items: _categories.map((category) {
                     return DropdownMenuItem(
                       value: category == 'All' ? null : category,
@@ -143,11 +158,15 @@ class _ForecastDashboardPageState extends State<ForecastDashboardPage> {
               stream: _repository.watchAll(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return CommonWidgets.buildLoadingIndicator();
                 }
 
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return CommonWidgets.buildErrorState(
+                    title: 'Terjadi kesalahan',
+                    subtitle: '${snapshot.error}',
+                    onRetry: () => setState(() {}),
+                  );
                 }
 
                 final forecasts = snapshot.data ?? [];
@@ -158,20 +177,30 @@ class _ForecastDashboardPageState extends State<ForecastDashboardPage> {
                 }).toList();
 
                 if (filteredForecasts.isEmpty) {
-                  return const Center(child: Text('Tidak ada data forecast'));
+                  return CommonWidgets.buildEmptyState(
+                    title: 'Tidak ada data forecast',
+                    subtitle: 'Tambahkan prediksi baru untuk mulai memantau akurasi',
+                    icon: Icons.bar_chart,
+                    action: CommonWidgets.buildPrimaryButton(
+                      text: 'Tambah Forecast',
+                      icon: Icons.add,
+                      onPressed: () => _openForm(),
+                    ),
+                  );
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppTheme.spacingL),
                   itemCount: filteredForecasts.length,
                   itemBuilder: (context, index) {
                     final forecast = filteredForecasts[index];
 
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
+                    return CommonWidgets.buildCard(
+                      padding: const EdgeInsets.all(AppTheme.spacingM),
                       child: ListTile(
+                        contentPadding: EdgeInsets.zero,
                         leading: CircleAvatar(
-                          backgroundColor: Theme.of(context).primaryColor,
+                          backgroundColor: _getCategoryColor(forecast.category),
                           child: Icon(
                             _getCategoryIcon(forecast.category),
                             color: Colors.white,
@@ -179,45 +208,42 @@ class _ForecastDashboardPageState extends State<ForecastDashboardPage> {
                         ),
                         title: Text(
                           forecast.category,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: AppTheme.heading4,
                         ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Prediksi Demand: ${forecast.predictedDemand.toStringAsFixed(2)}'),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Text('Akurasi: ${forecast.accuracyRate.toStringAsFixed(1)}%'),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: AppTheme.spacingXS),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Prediksi Demand: ${forecast.predictedDemand.toStringAsFixed(2)}',
+                                  style: AppTheme.bodyMedium),
+                              const SizedBox(height: AppTheme.spacingS),
+                              Row(
+                                children: [
+                                  Text('Akurasi: ${forecast.accuracyRate.toStringAsFixed(1)}%',
+                                      style: AppTheme.bodySmall),
+                                  const SizedBox(width: AppTheme.spacingM),
+                                  CommonWidgets.buildChip(
+                                    text: forecast.accuracyRate >= 80
+                                        ? 'Tinggi'
+                                        : forecast.accuracyRate >= 60
+                                            ? 'Sedang'
+                                            : 'Rendah',
                                     color: _getAccuracyColor(forecast.accuracyRate),
-                                    borderRadius: BorderRadius.circular(12),
+                                    icon: Icons.speed,
                                   ),
-                                  child: Text(
-                                    forecast.accuracyRate >= 80 ? 'Tinggi' : 
-                                    forecast.accuracyRate >= 60 ? 'Sedang' : 'Rendah',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Diperbarui: ${forecast.updatedAt.day}/${forecast.updatedAt.month}/${forecast.updatedAt.year}',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 12,
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: AppTheme.spacingS),
+                              Text(
+                                'Diperbarui: ${forecast.updatedAt.day}/${forecast.updatedAt.month}/${forecast.updatedAt.year}',
+                                style: AppTheme.bodySmall,
+                              ),
+                            ],
+                          ),
                         ),
                         trailing: PopupMenuButton<String>(
+                          color: AppTheme.surfaceDark,
                           onSelected: (value) {
                             switch (value) {
                               case 'edit':
@@ -228,8 +254,8 @@ class _ForecastDashboardPageState extends State<ForecastDashboardPage> {
                                 break;
                             }
                           },
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
                               value: 'edit',
                               child: ListTile(
                                 leading: Icon(Icons.edit),
@@ -237,16 +263,17 @@ class _ForecastDashboardPageState extends State<ForecastDashboardPage> {
                                 contentPadding: EdgeInsets.zero,
                               ),
                             ),
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'delete',
                               child: ListTile(
-                                leading: Icon(Icons.delete, color: Colors.red),
+                                leading: Icon(Icons.delete, color: AppTheme.errorColor),
                                 title: Text('Hapus'),
                                 contentPadding: EdgeInsets.zero,
                               ),
                             ),
                           ],
                         ),
+                        onTap: () => _openForm(forecast),
                       ),
                     );
                   },

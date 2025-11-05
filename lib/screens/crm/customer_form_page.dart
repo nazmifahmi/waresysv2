@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/crm/customer_model.dart';
 import '../../providers/crm/customer_provider.dart';
 import '../../constants/theme.dart';
+import '../../widgets/common_widgets.dart';
 
 class CustomerFormPage extends ConsumerStatefulWidget {
   final CustomerModel? customer;
@@ -84,44 +85,16 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryGreen,
-        title: Text(
-          widget.isEdit ? 'Edit Customer' : 'Tambah Customer',
-          style: AppTheme.heading4.copyWith(color: Colors.white),
-        ),
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
+      backgroundColor: AppTheme.backgroundDark,
+      appBar: CommonWidgets.buildAppBar(
+        title: widget.isEdit ? 'Edit Customer' : 'Tambah Customer',
         actions: [
-          if (_isLoading)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppTheme.spacingL),
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-              ),
-            )
-          else
-            TextButton(
-              onPressed: _saveCustomer,
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
-              ),
-              child: Text(
-                'Simpan',
-                style: AppTheme.labelLarge.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+          CommonWidgets.buildAppBarAction(
+            text: 'Simpan',
+            onPressed: _saveCustomer,
+            isLoading: _isLoading,
+            icon: Icons.save,
+          ),
         ],
       ),
       body: Form(
@@ -150,341 +123,252 @@ class _CustomerFormPageState extends ConsumerState<CustomerFormPage> {
   }
 
   Widget _buildBasicInfoSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Informasi Dasar',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nama Lengkap *',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Nama harus diisi';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _companyController,
-                    decoration: const InputDecoration(
-                      labelText: 'Perusahaan',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Informasi Dasar',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CommonWidgets.buildTextField(
+            label: 'Nama Lengkap *',
+            controller: _nameController,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Nama harus diisi';
+              }
+              return null;
+            },
+            prefixIcon: Icons.person,
+          ),
+          const SizedBox(height: AppTheme.spacingL),
+          Row(
+            children: [
+              Expanded(
+                child: CommonWidgets.buildTextField(
+                  label: 'Perusahaan',
+                  controller: _companyController,
+                  prefixIcon: Icons.business,
                 ),
-                SizedBox(width: AppTheme.spacingL),
-                Expanded(
-                  child: TextFormField(
-                    controller: _positionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Posisi/Jabatan',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
+              ),
+              const SizedBox(width: AppTheme.spacingL),
+              Expanded(
+                child: CommonWidgets.buildTextField(
+                  label: 'Posisi/Jabatan',
+                  controller: _positionController,
+                  prefixIcon: Icons.badge,
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildContactInfoSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Informasi Kontak',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email *',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Email harus diisi';
-                }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                  return 'Format email tidak valid';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Nomor Telepon *',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Nomor telepon harus diisi';
-                }
-                return null;
-              },
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Informasi Kontak',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CommonWidgets.buildTextField(
+            label: 'Email *',
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            prefixIcon: Icons.email,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Email harus diisi';
+              }
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                return 'Format email tidak valid';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: AppTheme.spacingL),
+          CommonWidgets.buildTextField(
+            label: 'Nomor Telepon *',
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            prefixIcon: Icons.phone,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Nomor telepon harus diisi';
+              }
+              return null;
+            },
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildAddressSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Alamat',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _addressController,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Alamat Lengkap *',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Alamat harus diisi';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _cityController,
-                    decoration: const InputDecoration(
-                      labelText: 'Kota *',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Kota harus diisi';
-                      }
-                      return null;
-                    },
-                  ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Alamat',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CommonWidgets.buildTextField(
+            label: 'Alamat Lengkap *',
+            controller: _addressController,
+            maxLines: 2,
+            prefixIcon: Icons.location_on,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Alamat harus diisi';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: AppTheme.spacingL),
+          Row(
+            children: [
+              Expanded(
+                child: CommonWidgets.buildTextField(
+                  label: 'Kota *',
+                  controller: _cityController,
+                  prefixIcon: Icons.location_city,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Kota harus diisi';
+                    }
+                    return null;
+                  },
                 ),
-                SizedBox(width: AppTheme.spacingL),
-                Expanded(
-                  child: TextFormField(
-                    controller: _provinceController,
-                    decoration: const InputDecoration(
-                      labelText: 'Provinsi',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _postalCodeController,
-              decoration: const InputDecoration(
-                labelText: 'Kode Pos',
-                border: OutlineInputBorder(),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(width: AppTheme.spacingL),
+              Expanded(
+                child: CommonWidgets.buildTextField(
+                  label: 'Provinsi',
+                  controller: _provinceController,
+                  prefixIcon: Icons.map,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.spacingL),
+          CommonWidgets.buildTextField(
+            label: 'Kode Pos',
+            controller: _postalCodeController,
+            keyboardType: TextInputType.number,
+            prefixIcon: Icons.local_post_office,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildCategorySection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Kategori Customer',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            DropdownButtonFormField<CustomerStatus>(
-              value: _selectedStatus,
-              decoration: const InputDecoration(
-                labelText: 'Status',
-                border: OutlineInputBorder(),
-              ),
-              items: CustomerStatus.values.map((status) {
-                return DropdownMenuItem(
-                  value: status,
-                  child: Text(_getStatusLabel(status)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedStatus = value!;
-                });
-              },
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            DropdownButtonFormField<CustomerSegment>(
-              value: _selectedSegment,
-              decoration: const InputDecoration(
-                labelText: 'Segmen',
-                border: OutlineInputBorder(),
-              ),
-              items: CustomerSegment.values.map((segment) {
-                return DropdownMenuItem(
-                  value: segment,
-                  child: Text(_getSegmentLabel(segment)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedSegment = value!;
-                });
-              },
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            DropdownButtonFormField<CustomerSource>(
-              value: _selectedSource,
-              decoration: const InputDecoration(
-                labelText: 'Sumber',
-                border: OutlineInputBorder(),
-              ),
-              items: CustomerSource.values.map((source) {
-                return DropdownMenuItem(
-                  value: source,
-                  child: Text(_getSourceLabel(source)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedSource = value!;
-                });
-              },
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Kategori Customer',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DropdownButtonFormField<CustomerStatus>(
+            value: _selectedStatus,
+            decoration: AppTheme.inputDecoration('Status'),
+            items: CustomerStatus.values.map((status) {
+              return DropdownMenuItem(
+                value: status,
+                child: Text(_getStatusLabel(status)),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedStatus = value!;
+              });
+            },
+          ),
+          const SizedBox(height: AppTheme.spacingL),
+          DropdownButtonFormField<CustomerSegment>(
+            value: _selectedSegment,
+            decoration: AppTheme.inputDecoration('Segmen'),
+            items: CustomerSegment.values.map((segment) {
+              return DropdownMenuItem(
+                value: segment,
+                child: Text(_getSegmentLabel(segment)),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedSegment = value!;
+              });
+            },
+          ),
+          const SizedBox(height: AppTheme.spacingL),
+          DropdownButtonFormField<CustomerSource>(
+            value: _selectedSource,
+            decoration: AppTheme.inputDecoration('Sumber'),
+            items: CustomerSource.values.map((source) {
+              return DropdownMenuItem(
+                value: source,
+                child: Text(_getSourceLabel(source)),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedSource = value!;
+              });
+            },
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildTagsSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tags',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
+    return CommonWidgets.buildSectionCard(
+      title: 'Tags',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _tagController,
+                  decoration: AppTheme.inputDecoration('Tambah Tag'),
+                  onFieldSubmitted: _addTag,
+                ),
               ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _tagController,
-                    decoration: const InputDecoration(
-                      labelText: 'Tambah Tag',
-                      border: OutlineInputBorder(),
-                    ),
-                    onFieldSubmitted: _addTag,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () => _addTag(_tagController.text),
-                  child: const Text('Tambah'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _tags.map((tag) {
-                return Chip(
-                  label: Text(tag),
-                  deleteIcon: const Icon(Icons.close, size: 18),
-                  onDeleted: () {
-                    setState(() {
-                      _tags.remove(tag);
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+              const SizedBox(width: AppTheme.spacingS),
+              CommonWidgets.buildPrimaryButton(
+                text: 'Tambah',
+                onPressed: () => _addTag(_tagController.text),
+                icon: Icons.add,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.spacingL),
+          Wrap(
+            spacing: AppTheme.spacingS,
+            runSpacing: AppTheme.spacingS,
+            children: _tags.map((tag) {
+              return Chip(
+                label: Text(tag),
+                deleteIcon: const Icon(Icons.close, size: 18),
+                onDeleted: () {
+                  setState(() {
+                    _tags.remove(tag);
+                  });
+                },
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildNotesSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Catatan',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _notesController,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Catatan tambahan',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Catatan',
+      child: CommonWidgets.buildTextField(
+        label: 'Catatan tambahan',
+        controller: _notesController,
+        maxLines: 4,
+        prefixIcon: Icons.notes,
       ),
     );
   }

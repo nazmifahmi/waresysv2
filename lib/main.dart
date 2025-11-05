@@ -15,6 +15,7 @@ import 'package:waresys_fix1/services/firebase_messaging_handler.dart';
 import 'package:waresys_fix1/providers/auth_provider.dart';
 import 'package:waresys_fix1/providers/transaction_provider.dart';
 import 'package:waresys_fix1/providers/inventory_provider.dart';
+import 'package:waresys_fix1/providers/logistics/active_warehouse_provider.dart';
 import 'package:waresys_fix1/providers/news_provider.dart';
 import 'package:waresys_fix1/providers/theme_provider.dart';
 import 'package:waresys_fix1/screens/welcome_screen.dart';
@@ -37,35 +38,11 @@ import 'package:waresys_fix1/utils/run_migration.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize locale data for date formatting
   await initializeDateFormatting();
-  
-  // Inisialisasi Firebase dengan timeout dan error handling
-  bool firebaseInitialized = false;
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    ).timeout(const Duration(seconds: 10));
-    firebaseInitialized = true;
-    debugPrint('✅ Firebase initialized successfully');
-    
-    // Inisialisasi FirestoreConnectionService setelah Firebase berhasil
-     await FirestoreConnectionService().initialize();
-     debugPrint('✅ FirestoreConnectionService initialized successfully');
-     
-    // Inisialisasi Firebase Messaging untuk push notifications
-     try {
-       await FirebaseMessagingHandler.initialize();
-       debugPrint('✅ Firebase Messaging initialized successfully');
-     } catch (e) {
-       debugPrint('⚠️ Firebase Messaging initialization failed: $e');
-     }
-  } catch (e) {
-    debugPrint('⚠️ Firebase initialization failed: $e');
-    debugPrint('📱 Continuing with offline mode...');
-  }
 
+  // Mulai aplikasi secepat mungkin, pindahkan inisialisasi berat ke SplashScreen
   runApp(
     ProviderScope(
       child: provider.MultiProvider(
@@ -73,7 +50,7 @@ void main() async {
           provider.ChangeNotifierProvider(create: (_) => AuthProvider()),
           provider.ChangeNotifierProvider(create: (_) => TransactionProvider()),
           provider.ChangeNotifierProvider(create: (_) => InventoryProvider()),
-          // Daftarkan AIProvider kita di sini
+          provider.ChangeNotifierProvider(create: (_) => ActiveWarehouseProvider()),
           provider.ChangeNotifierProvider(create: (_) => AIProvider()),
           provider.ChangeNotifierProvider(create: (_) => ChatProvider()),
           provider.ChangeNotifierProvider(create: (_) => NewsProvider()),
@@ -133,7 +110,10 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeApp();
+    // Pastikan frame pertama ditampilkan dulu, lalu jalankan inisialisasi berat
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeApp();
+    });
   }
 
   Future<void> _initializeApp() async {
@@ -142,6 +122,38 @@ class _SplashScreenState extends State<SplashScreen> {
       PerformanceMetrics.startTimer('app_initialization');
       if (kDebugMode) {
         PerformanceOptimizer.monitorFrameRate();
+      }
+      
+      // Pindahkan seluruh inisialisasi Firebase dan layanan terkait ke sini,
+      // jalankan segera setelah frame pertama supaya tidak memblokir Activity start.
+      bool firebaseInitialized = false;
+      try {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        ).timeout(const Duration(seconds: 10));
+        firebaseInitialized = true;
+        debugPrint('✅ Firebase initialized successfully');
+
+        // Inisialisasi FirestoreConnectionService setelah Firebase berhasil
+        try {
+          await FirestoreConnectionService().initialize()
+              .timeout(const Duration(seconds: 10));
+          debugPrint('✅ FirestoreConnectionService initialized successfully');
+        } catch (e) {
+          debugPrint('⚠️ FirestoreConnectionService initialization failed: $e');
+        }
+
+        // Inisialisasi Firebase Messaging untuk push notifications
+        try {
+          await FirebaseMessagingHandler.initialize()
+              .timeout(const Duration(seconds: 10));
+          debugPrint('✅ Firebase Messaging initialized successfully');
+        } catch (e) {
+          debugPrint('⚠️ Firebase Messaging initialization failed: $e');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Firebase initialization failed: $e');
+        debugPrint('📱 Continuing with offline mode...');
       }
       
       // Panggil inisialisasi AI dari AIProvider dengan timeout

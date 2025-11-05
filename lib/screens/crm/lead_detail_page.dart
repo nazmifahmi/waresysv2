@@ -6,6 +6,7 @@ import '../../providers/crm/lead_provider.dart';
 import '../../providers/crm/customer_provider.dart';
 import '../../constants/theme.dart';
 import 'lead_form_page.dart';
+import '../../widgets/common_widgets.dart';
 
 class LeadDetailPage extends ConsumerWidget {
   final LeadModel lead;
@@ -18,54 +19,26 @@ class LeadDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryGreen,
-        title: Text(
-          'Detail Lead',
-          style: AppTheme.heading4.copyWith(color: Colors.white),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
+      backgroundColor: AppTheme.backgroundDark,
+      appBar: CommonWidgets.buildAppBar(
+        title: 'Detail Lead',
+        onBackPressed: () => Navigator.of(context).pop(),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
+          CommonWidgets.buildAppBarAction(
+            text: 'Edit',
+            icon: Icons.edit,
             onPressed: () => _editLead(context),
           ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              switch (value) {
-                case 'convert':
-                  _showConvertDialog(context, ref);
-                  break;
-                case 'delete':
-                  _showDeleteDialog(context, ref);
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              if (lead.isOpen)
-                const PopupMenuItem(
-                  value: 'convert',
-                  child: Row(
-                    children: [
-                      Icon(Icons.person_add, color: Colors.green),
-                      SizedBox(width: 8),
-                      Text('Konversi ke Customer'),
-                    ],
-                  ),
-                ),
-              const PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Hapus Lead'),
-                  ],
-                ),
-              ),
-            ],
+          if (lead.isOpen)
+            CommonWidgets.buildAppBarAction(
+              text: 'Konversi',
+              icon: Icons.person_add,
+              onPressed: () => _showConvertDialog(context, ref),
+            ),
+          CommonWidgets.buildAppBarAction(
+            text: 'Hapus',
+            icon: Icons.delete,
+            onPressed: () => _showDeleteDialog(context, ref),
           ),
         ],
       ),
@@ -96,337 +69,214 @@ class LeadDetailPage extends ConsumerWidget {
   }
 
   Widget _buildHeaderCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: _getQualityColor(lead.quality),
-                  child: Text(
-                    lead.name.isNotEmpty ? lead.name[0].toUpperCase() : 'L',
-                    style: AppTheme.heading3.copyWith(
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                SizedBox(width: AppTheme.spacingL),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        lead.displayName,
-                        style: AppTheme.heading3.copyWith(
-                          color: AppTheme.textPrimaryLight,
-                        ),
-                      ),
-                      if (lead.position != null)
-                        Text(
-                          lead.position!,
-                          style: AppTheme.bodyMedium.copyWith(
-                            color: AppTheme.textSecondaryLight,
-                          ),
-                        ),
-                      SizedBox(height: AppTheme.spacingS),
-                      Row(
-                        children: [
-                          _buildStatusChip(lead.status),
-                          SizedBox(width: AppTheme.spacingS),
-                          _buildPriorityChip(lead.priority),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
+    return CommonWidgets.buildDetailHeader(
+      title: lead.displayName,
+      subtitle: lead.position,
+      avatarColor: _getQualityColor(lead.quality),
+      chips: [
+        CommonWidgets.buildChip(
+          text: _getStatusLabel(lead.status),
+          color: AppTheme.accentBlue,
         ),
-      ),
+        CommonWidgets.buildChip(
+          text: _getPriorityLabel(lead.priority),
+          color: AppTheme.accentOrange,
+        ),
+      ],
     );
   }
 
   Widget _buildProgressCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Progress Pipeline',
-                  style: AppTheme.heading4.copyWith(
-                    color: AppTheme.primaryGreen,
+    return CommonWidgets.buildSectionCard(
+      title: 'Progress Pipeline',
+      trailing: Text(
+        '${(lead.stageProgress * 100).toInt()}%',
+        style: AppTheme.labelLarge.copyWith(color: AppTheme.primaryGreen),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LinearProgressIndicator(
+            value: lead.stageProgress,
+            backgroundColor: AppTheme.borderLight,
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: AppTheme.spacingS),
+                  child: _buildStatItem(
+                    'Kualitas',
+                    _getQualityLabel(lead.quality),
+                    Icons.star,
+                    _getQualityColor(lead.quality),
                   ),
                 ),
-                Text(
-                  '${(lead.stageProgress * 100).toInt()}%',
-                  style: AppTheme.labelLarge.copyWith(
-                    color: AppTheme.primaryGreen,
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(left: AppTheme.spacingS),
+                  child: _buildStatItem(
+                    'Weighted Value',
+                    'Rp ${lead.weightedValue.toStringAsFixed(0)}',
+                    Icons.trending_up,
+                    AppTheme.accentPurple,
                   ),
                 ),
-              ],
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            LinearProgressIndicator(
-              value: lead.stageProgress,
-              backgroundColor: AppTheme.borderLight,
-              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(right: AppTheme.spacingS),
-                    child: _buildStatItem(
-                      'Kualitas',
-                      _getQualityLabel(lead.quality),
-                      Icons.star,
-                      _getQualityColor(lead.quality),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(left: AppTheme.spacingS),
-                    child: _buildStatItem(
-                      'Weighted Value',
-                      'Rp ${lead.weightedValue.toStringAsFixed(0)}',
-                      Icons.trending_up,
-                      AppTheme.accentPurple,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildContactInfoCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Informasi Kontak',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            _buildInfoRow(Icons.email, 'Email', lead.email),
+    return CommonWidgets.buildSectionCard(
+      title: 'Informasi Kontak',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInfoRow(Icons.email, 'Email', lead.email),
+          SizedBox(height: AppTheme.spacingM),
+          _buildInfoRow(Icons.phone, 'Telepon', lead.phone),
+          if (lead.company != null) ...[
             SizedBox(height: AppTheme.spacingM),
-            _buildInfoRow(Icons.phone, 'Telepon', lead.phone),
-            if (lead.company != null) ...[
-              SizedBox(height: AppTheme.spacingM),
-              _buildInfoRow(Icons.business, 'Perusahaan', lead.company!),
-            ],
-            if (lead.industry != null) ...[
-              SizedBox(height: AppTheme.spacingM),
-              _buildInfoRow(Icons.category, 'Industri', lead.industry!),
-            ],
+            _buildInfoRow(Icons.business, 'Perusahaan', lead.company!),
           ],
-        ),
+          if (lead.industry != null) ...[
+            SizedBox(height: AppTheme.spacingM),
+            _buildInfoRow(Icons.category, 'Industri', lead.industry!),
+          ],
+        ],
       ),
     );
   }
 
   Widget _buildLeadDetailsCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Detail Lead',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
+    return CommonWidgets.buildSectionCard(
+      title: 'Detail Lead',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _buildInfoItem('Status', _getStatusLabel(lead.status)),
               ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildInfoItem('Status', _getStatusLabel(lead.status)),
-                ),
-                Expanded(
-                  child: _buildInfoItem('Sumber', _getSourceLabel(lead.source)),
-                ),
-              ],
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildInfoItem('Prioritas', _getPriorityLabel(lead.priority)),
-                ),
-                Expanded(
-                  child: _buildInfoItem('Kontak Attempts', lead.contactAttempts.toString()),
-                ),
-              ],
-            ),
-          ],
-        ),
+              Expanded(
+                child: _buildInfoItem('Sumber', _getSourceLabel(lead.source)),
+              ),
+            ],
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          Row(
+            children: [
+              Expanded(
+                child: _buildInfoItem('Prioritas', _getPriorityLabel(lead.priority)),
+              ),
+              Expanded(
+                child: _buildInfoItem('Kontak Attempts', lead.contactAttempts.toString()),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildValueCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Nilai & Probabilitas',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
+    return CommonWidgets.buildSectionCard(
+      title: 'Nilai & Probabilitas',
+      child: Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(right: AppTheme.spacingS),
+              child: _buildStatItem(
+                'Estimasi Nilai',
+                'Rp ${lead.estimatedValue.toStringAsFixed(0)}',
+                Icons.attach_money,
+                AppTheme.successColor,
               ),
             ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(right: AppTheme.spacingS),
-                    child: _buildStatItem(
-                      'Estimasi Nilai',
-                      'Rp ${lead.estimatedValue.toStringAsFixed(0)}',
-                      Icons.attach_money,
-                      AppTheme.successColor,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(left: AppTheme.spacingS),
-                    child: _buildStatItem(
-                      'Probabilitas',
-                      '${lead.probabilityPercent}%',
-                      Icons.percent,
-                      AppTheme.infoColor,
-                    ),
-                  ),
-                ),
-              ],
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: AppTheme.spacingS),
+              child: _buildStatItem(
+                'Probabilitas',
+                '${lead.probabilityPercent}%',
+                Icons.percent,
+                AppTheme.infoColor,
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildDatesCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tanggal Penting',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Tanggal Penting',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (lead.expectedCloseDate != null)
+            _buildInfoItem(
+              'Perkiraan Closing',
+              _formatDate(lead.expectedCloseDate!),
             ),
-            SizedBox(height: AppTheme.spacingL),
-            if (lead.expectedCloseDate != null)
-              _buildInfoItem(
-                'Perkiraan Closing',
-                _formatDate(lead.expectedCloseDate!),
-              ),
-            if (lead.nextFollowUpDate != null) ...[
-              SizedBox(height: AppTheme.spacingM),
-              _buildInfoItem(
-                'Follow-up Berikutnya',
-                _formatDate(lead.nextFollowUpDate!),
-              ),
-            ],
-            if (lead.lastContactDate != null) ...[
-              SizedBox(height: AppTheme.spacingM),
-              _buildInfoItem(
-                'Kontak Terakhir',
-                _formatDate(lead.lastContactDate!),
-              ),
-            ],
+          if (lead.nextFollowUpDate != null) ...[
             SizedBox(height: AppTheme.spacingM),
             _buildInfoItem(
-              'Dibuat',
-              _formatDate(lead.createdAt),
+              'Follow-up Berikutnya',
+              _formatDate(lead.nextFollowUpDate!),
             ),
           ],
-        ),
+          if (lead.lastContactDate != null) ...[
+            SizedBox(height: AppTheme.spacingM),
+            _buildInfoItem(
+              'Kontak Terakhir',
+              _formatDate(lead.lastContactDate!),
+            ),
+          ],
+          SizedBox(height: AppTheme.spacingM),
+          _buildInfoItem(
+            'Dibuat',
+            _formatDate(lead.createdAt),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildTagsCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tags',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Wrap(
-              spacing: AppTheme.spacingS,
-              runSpacing: AppTheme.spacingS,
-              children: lead.tags.map((tag) {
-                return Chip(
-                  label: Text(tag),
-                  backgroundColor: AppTheme.primaryGreen.withOpacity(0.1),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Tags',
+      child: Wrap(
+        spacing: AppTheme.spacingS,
+        runSpacing: AppTheme.spacingS,
+        children: lead.tags.map((tag) {
+          return CommonWidgets.buildChip(
+            text: tag,
+            color: AppTheme.primaryGreen,
+          );
+        }).toList(),
       ),
     );
   }
 
   Widget _buildNotesCard() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Catatan',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.primaryGreen,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Text(
-              lead.notes!,
-              style: AppTheme.bodyMedium.copyWith(
-                color: AppTheme.textPrimaryLight,
-              ),
-            ),
-          ],
+    return CommonWidgets.buildSectionCard(
+      title: 'Catatan',
+      child: Text(
+        lead.notes!,
+        style: AppTheme.bodyMedium.copyWith(
+          color: AppTheme.textPrimary,
         ),
       ),
     );
@@ -524,13 +374,13 @@ class LeadDetailPage extends ConsumerWidget {
               Text(
                 label,
                 style: AppTheme.labelSmall.copyWith(
-                  color: AppTheme.textSecondaryLight,
+                  color: AppTheme.textPrimary,
                 ),
               ),
               Text(
                 value,
                 style: AppTheme.bodyMedium.copyWith(
-                  color: AppTheme.textPrimaryLight,
+                  color: AppTheme.textPrimary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -548,14 +398,14 @@ class LeadDetailPage extends ConsumerWidget {
         Text(
           label,
           style: AppTheme.labelSmall.copyWith(
-            color: AppTheme.textSecondaryLight,
+            color: AppTheme.textPrimary,
           ),
         ),
         SizedBox(height: AppTheme.spacingXS),
         Text(
           value,
           style: AppTheme.bodyMedium.copyWith(
-            color: AppTheme.textPrimaryLight,
+            color: AppTheme.textPrimary,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -588,7 +438,7 @@ class LeadDetailPage extends ConsumerWidget {
           Text(
             label,
             style: AppTheme.labelSmall.copyWith(
-              color: AppTheme.textSecondaryLight,
+              color: AppTheme.textPrimary,
             ),
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,

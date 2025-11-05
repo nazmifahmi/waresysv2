@@ -67,6 +67,22 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate() || _joinDate == null) return;
+    
+    // Additional validation for position and department
+    if (_position == null || _position!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Posisi harus dipilih')),
+      );
+      return;
+    }
+    
+    if (_department == null || _department!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Departemen harus dipilih')),
+      );
+      return;
+    }
+    
     setState(() => _saving = true);
     
     try {
@@ -74,8 +90,8 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
         employeeId: widget.existing?.employeeId ?? '',
         userId: widget.existing?.userId ?? 'user_${DateTime.now().millisecondsSinceEpoch}',
         fullName: _fullNameCtrl.text.trim(),
-        position: _position ?? '',
-        department: _department ?? '',
+        position: _position!,
+        department: _department!,
         joinDate: _joinDate!,
         salary: double.tryParse(_salaryCtrl.text.trim()) ?? 0,
         contractUrl: _contractUrl,

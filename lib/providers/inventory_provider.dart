@@ -56,7 +56,7 @@ class InventoryProvider with ChangeNotifier {
         .snapshots();
   }
 
-  Future<void> addProduct(Map<String, dynamic> product, {required String userId, required String userName}) async {
+  Future<String> addProduct(Map<String, dynamic> product, {required String userId, required String userName}) async {
     try {
       final docRef = await _firestore.collection('products').add({
         ...product,
@@ -83,6 +83,7 @@ class InventoryProvider with ChangeNotifier {
       );
 
       await loadProducts();
+      return docRef.id;
     } catch (e) {
       print('Error adding product: $e');
       rethrow;
@@ -194,5 +195,5 @@ class InventoryProvider with ChangeNotifier {
       rethrow;
     }
   }
-} 
+}
  

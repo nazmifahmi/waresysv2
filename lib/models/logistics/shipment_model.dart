@@ -12,6 +12,8 @@ class ShipmentModel {
   final double cost;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final String? originWarehouseId;
+  final String? destinationWarehouseId;
 
   ShipmentModel({
     required this.shipmentId,
@@ -23,8 +25,9 @@ class ShipmentModel {
     required this.cost,
     required this.createdAt,
     this.updatedAt,
-  }) : assert(shipmentId.isNotEmpty, 'shipmentId cannot be empty'),
-       assert(trackingNumber.isNotEmpty, 'trackingNumber cannot be empty'),
+    this.originWarehouseId,
+    this.destinationWarehouseId,
+  }) : assert(trackingNumber.isNotEmpty, 'trackingNumber cannot be empty'),
        assert(origin.isNotEmpty, 'origin cannot be empty'),
        assert(destination.isNotEmpty, 'destination cannot be empty'),
        assert(carrier.isNotEmpty, 'carrier cannot be empty'),
@@ -40,6 +43,8 @@ class ShipmentModel {
         'cost': cost,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
+        'originWarehouseId': originWarehouseId,
+        'destinationWarehouseId': destinationWarehouseId,
       };
 
   factory ShipmentModel.fromMap(Map<String, dynamic> map) => ShipmentModel(
@@ -55,6 +60,8 @@ class ShipmentModel {
         cost: (map['cost'] ?? 0).toDouble(),
         createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         updatedAt: (map['updatedAt'] as Timestamp?)?.toDate(),
+        originWarehouseId: map['originWarehouseId'],
+        destinationWarehouseId: map['destinationWarehouseId'],
       );
 
   factory ShipmentModel.fromDoc(DocumentSnapshot doc) =>

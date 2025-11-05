@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../constants/theme.dart';
+import '../../widgets/common_widgets.dart';
 import '../../models/logistics/shipment_model.dart';
 import '../../services/logistics/shipment_repository.dart';
 import 'shipment_form_page.dart';
@@ -34,34 +35,48 @@ class _ShippingDashboardPageState extends State<ShippingDashboardPage> {
   }
 
   Color _getStatusColor(String status) {
+    // Konsisten dengan enum ShipmentStatus: pending, inTransit, delivered, cancelled
     switch (status.toLowerCase()) {
       case 'pending':
-        return Colors.orange;
-      case 'in_transit':
-        return Colors.blue;
+        return AppTheme.warningColor;
+      case 'intransit':
+        return AppTheme.infoColor;
       case 'delivered':
-        return Colors.green;
+        return AppTheme.successColor;
       case 'cancelled':
-        return Colors.red;
+        return AppTheme.errorColor;
       default:
-        return Colors.grey;
+        return AppTheme.textTertiary;
+    }
+  }
+
+  String _statusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Pending';
+      case 'intransit':
+        return 'In Transit';
+      case 'delivered':
+        return 'Delivered';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return status;
     }
   }
 
   Widget _statusChip(String status) {
+    final color = _getStatusColor(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: _getStatusColor(status).withOpacity(0.2),
+        color: color.withOpacity(0.18),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.6)),
       ),
       child: Text(
-        status.toUpperCase(),
-        style: TextStyle(
-          color: _getStatusColor(status),
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
+        _statusLabel(status),
+        style: AppTheme.labelSmall.copyWith(color: AppTheme.textPrimary),
       ),
     );
   }
@@ -69,66 +84,83 @@ class _ShippingDashboardPageState extends State<ShippingDashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard Pengiriman'),
+      backgroundColor: AppTheme.backgroundDark,
+      appBar: CommonWidgets.buildAppBar(
+        title: 'Dashboard Pengiriman',
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.add, color: AppTheme.textPrimary),
             onPressed: () => _openForm(),
           ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppTheme.spacingL),
         child: Column(
           children: [
-            TextField(
+            CommonWidgets.buildTextField(
+              label: 'Cari berdasarkan tracking number',
+              hint: 'Masukkan nomor resi...',
               controller: _trackingNumberCtrl,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: 'Cari berdasarkan tracking number...',
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _trackingNumberCtrl.clear();
-                    setState(() {});
-                  },
-                ),
+              prefixIcon: Icons.search,
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.clear, color: AppTheme.textSecondary),
+                onPressed: () {
+                  _trackingNumberCtrl.clear();
+                  setState(() {});
+                },
               ),
               onChanged: (_) => setState(() {}),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppTheme.spacingL),
             Expanded(
               child: FutureBuilder<List<ShipmentModel>>(
-                future: _repository.getAll(search: _trackingNumberCtrl.text.trim().isEmpty ? null : _trackingNumberCtrl.text.trim()),
+                future: _repository.getAll(
+                  search: _trackingNumberCtrl.text.trim().isEmpty
+                      ? null
+                      : _trackingNumberCtrl.text.trim(),
+                ),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  
+
                   final list = snapshot.data ?? [];
                   if (list.isEmpty) {
-                    return const Center(child: Text('Belum ada data pengiriman.'));
+                    return Center(
+                      child: Text(
+                        'Belum ada data pengiriman.',
+                        style: AppTheme.bodyMedium,
+                      ),
+                    );
                   }
-                  
-                  return ListView.separated(
+
+                  return ListView.builder(
                     itemCount: list.length,
-                    separatorBuilder: (_, __) => const Divider(height: 0),
                     itemBuilder: (context, i) {
                       final shipment = list[i];
-                      return Card(
+                      return CommonWidgets.buildCard(
+                        padding: const EdgeInsets.all(AppTheme.spacingM),
                         child: ListTile(
-                          title: Text('${shipment.trackingNumber}'),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('${shipment.origin} → ${shipment.destination}'),
-                              Text('Carrier: ${shipment.carrier}'),
-                              Text('Cost: Rp ${shipment.cost.toStringAsFixed(0)}'),
-                            ],
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            shipment.trackingNumber,
+                            style: AppTheme.heading4,
+                          ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: AppTheme.spacingXS),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('${shipment.origin} → ${shipment.destination}', style: AppTheme.bodyMedium),
+                                Text('Carrier: ${shipment.carrier}', style: AppTheme.bodySmall),
+                                Text('Cost: Rp ${shipment.cost.toStringAsFixed(0)}', style: AppTheme.bodySmall),
+                              ],
+                            ),
                           ),
                           leading: _statusChip(shipment.status.name),
                           trailing: PopupMenuButton<String>(
+                            color: AppTheme.surfaceDark,
                             onSelected: (value) async {
                               if (value == 'edit') {
                                 _openForm(shipment: shipment);
@@ -175,12 +207,12 @@ class _ShippingDashboardPageState extends State<ShippingDashboardPage> {
                                 setState(() {});
                               }
                             },
-                            itemBuilder: (_) => [
-                              const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                              const PopupMenuItem(value: 'delete', child: Text('Hapus')),
-                              const PopupMenuItem(value: 'status_in_transit', child: Text('Set In Transit')),
-                              const PopupMenuItem(value: 'status_delivered', child: Text('Set Delivered')),
-                              const PopupMenuItem(value: 'status_cancelled', child: Text('Set Cancelled')),
+                            itemBuilder: (_) => const [
+                              PopupMenuItem(value: 'edit', child: Text('Edit')),
+                              PopupMenuItem(value: 'delete', child: Text('Hapus')),
+                              PopupMenuItem(value: 'status_inTransit', child: Text('Set In Transit')),
+                              PopupMenuItem(value: 'status_delivered', child: Text('Set Delivered')),
+                              PopupMenuItem(value: 'status_cancelled', child: Text('Set Cancelled')),
                             ],
                           ),
                           onTap: () => _openForm(shipment: shipment),

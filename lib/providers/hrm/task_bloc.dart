@@ -1,5 +1,6 @@
 import 'dart:async';
 import '../../models/hrm/task_model.dart';
+import '../../models/hrm/employee_model.dart';
 import '../../services/hrm/task_repository.dart';
 
 class TaskBloc {
@@ -13,6 +14,31 @@ class TaskBloc {
   Stream<List<TaskModel>> watchMyTasks(String employeeId) => _repo.watchMyTasks(employeeId);
 
   Stream<List<TaskModel>> watchAll() => _repo.watchAll();
+
+  /// Watch all tasks with filters
+  Stream<List<TaskModel>> watchAllWithFilters({
+    String? assigneeId,
+    String? reporterId,
+    TaskStatus? status,
+    TaskPriority? priority,
+    bool? isOverdue,
+    String orderBy = 'dueDate',
+    bool descending = false,
+  }) => _repo.watchAllWithFilters(
+    assigneeId: assigneeId,
+    reporterId: reporterId,
+    status: status,
+    priority: priority,
+    isOverdue: isOverdue,
+    orderBy: orderBy,
+    descending: descending,
+  );
+
+  /// Get all task assignees for filter dropdown
+  Future<List<EmployeeModel>> getAllTaskAssignees() => _repo.getAllTaskAssignees();
+
+  /// Get all task reporters for filter dropdown
+  Future<List<EmployeeModel>> getAllTaskReporters() => _repo.getAllTaskReporters();
 
   Future<void> create(TaskModel model) async {
     try {

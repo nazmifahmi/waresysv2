@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/crm/opportunity_model.dart';
 import '../../providers/crm/opportunity_provider.dart';
 import '../../constants/theme.dart';
+import '../../widgets/common_widgets.dart';
 
 class OpportunityFormPage extends ConsumerStatefulWidget {
   final OpportunityModel? opportunity;
@@ -86,37 +87,19 @@ class _OpportunityFormPageState extends ConsumerState<OpportunityFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundDark,
-      appBar: AppBar(
-        backgroundColor: AppTheme.primaryGreen,
-        title: Text(
-          widget.isEdit ? 'Edit Opportunity' : 'Tambah Opportunity',
-          style: AppTheme.heading4.copyWith(color: Colors.white),
-        ),
-        foregroundColor: Colors.white,
+      appBar: CommonWidgets.buildAppBar(
+        title: widget.isEdit ? 'Edit Opportunity' : 'Tambah Opportunity',
         actions: [
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-            ),
-            onPressed: _isLoading ? null : _saveOpportunity,
-            child: Text(
-              'Simpan',
-              style: AppTheme.labelLarge.copyWith(
-                color: _isLoading ? AppTheme.textSecondary : Colors.white,
-              ),
-            ),
+          CommonWidgets.buildAppBarAction(
+            text: 'Simpan',
+            onPressed: _saveOpportunity,
+            isLoading: _isLoading,
+            icon: Icons.check,
           ),
         ],
       ),
       body: _isLoading
-          ? Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppTheme.spacingL),
-                child: CircularProgressIndicator(
-                  color: AppTheme.accentBlue,
-                ),
-              ),
-            )
+          ? CommonWidgets.buildLoadingIndicator(message: 'Menyimpan opportunity...')
           : Form(
               key: _formKey,
               child: SingleChildScrollView(
@@ -144,344 +127,269 @@ class _OpportunityFormPageState extends ConsumerState<OpportunityFormPage> {
   }
 
   Widget _buildBasicInfoSection() {
-    return Container(
-      decoration: AppTheme.surfaceDecoration,
-      margin: EdgeInsets.only(bottom: AppTheme.spacingM),
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Informasi Dasar',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nama Opportunity *',
-                hintText: 'Masukkan nama opportunity',
-                prefixIcon: Icon(Icons.business_center),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Nama opportunity harus diisi';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Deskripsi',
-                hintText: 'Deskripsi opportunity',
-                prefixIcon: Icon(Icons.description),
-              ),
-              maxLines: 3,
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Informasi Dasar',
+      child: Column(
+        children: [
+          CommonWidgets.buildTextField(
+            label: 'Nama Opportunity *',
+            hint: 'Masukkan nama opportunity',
+            controller: _nameController,
+            prefixIcon: Icons.business_center,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Nama opportunity harus diisi';
+              }
+              return null;
+            },
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          CommonWidgets.buildTextField(
+            label: 'Deskripsi',
+            hint: 'Deskripsi opportunity',
+            controller: _descriptionController,
+            prefixIcon: Icons.description,
+            maxLines: 3,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildAmountSection() {
-    return Container(
-      decoration: AppTheme.surfaceDecoration,
-      margin: EdgeInsets.only(bottom: AppTheme.spacingM),
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Nilai & Probabilitas',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: TextFormField(
-                    controller: _amountController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nilai (IDR) *',
-                      hintText: '0',
-                      prefixIcon: Icon(Icons.attach_money),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Nilai harus diisi';
-                      }
-                      final amount = double.tryParse(value);
-                      if (amount == null || amount < 0) {
-                        return 'Nilai harus berupa angka positif';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                SizedBox(width: AppTheme.spacingL),
-                Expanded(
-                  flex: 2,
-                  child: TextFormField(
-                    controller: _probabilityController,
-                    decoration: const InputDecoration(
-                      labelText: 'Probabilitas (%)',
-                      hintText: '0-100',
-                      prefixIcon: Icon(Icons.percent),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        final prob = int.tryParse(value);
-                        if (prob == null || prob < 0 || prob > 100) {
-                          return 'Probabilitas 0-100';
-                        }
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            InkWell(
-              onTap: () => _selectDate(context),
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Perkiraan Closing *',
-                  prefixIcon: Icon(Icons.calendar_today),
-                ),
-                child: Text(
-                  '${_expectedCloseDate.day}/${_expectedCloseDate.month}/${_expectedCloseDate.year}',
+    return CommonWidgets.buildSectionCard(
+      title: 'Nilai & Probabilitas',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: CommonWidgets.buildTextField(
+                  label: 'Nilai (IDR) *',
+                  hint: '0',
+                  controller: _amountController,
+                  keyboardType: TextInputType.number,
+                  prefixIcon: Icons.attach_money,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Nilai harus diisi';
+                    }
+                    final amount = double.tryParse(value);
+                    if (amount == null || amount < 0) {
+                      return 'Nilai harus berupa angka positif';
+                    }
+                    return null;
+                  },
                 ),
               ),
+              SizedBox(width: AppTheme.spacingL),
+              Expanded(
+                flex: 2,
+                child: CommonWidgets.buildTextField(
+                  label: 'Probabilitas (%)',
+                  hint: '0-100',
+                  controller: _probabilityController,
+                  keyboardType: TextInputType.number,
+                  prefixIcon: Icons.percent,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      final prob = int.tryParse(value);
+                      if (prob == null || prob < 0 || prob > 100) {
+                        return 'Probabilitas 0-100';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          InkWell(
+            onTap: () => _selectDate(context),
+            child: InputDecorator(
+              decoration: AppTheme.inputDecoration('Perkiraan Closing *').copyWith(
+                prefixIcon: Icon(Icons.calendar_today, color: AppTheme.textSecondary),
+              ),
+              child: Text(
+                '${_expectedCloseDate.day}/${_expectedCloseDate.month}/${_expectedCloseDate.year}',
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildStageSection() {
-    return Container(
-      decoration: AppTheme.surfaceDecoration,
-      margin: EdgeInsets.only(bottom: AppTheme.spacingM),
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Stage & Kategori',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.textPrimary,
-              ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Stage & Kategori',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DropdownButtonFormField<OpportunityStage>(
+            value: _selectedStage,
+            isExpanded: true,
+            decoration: AppTheme.inputDecoration('Stage').copyWith(
+              prefixIcon: Icon(Icons.timeline, color: AppTheme.textSecondary),
             ),
-            SizedBox(height: AppTheme.spacingL),
-            DropdownButtonFormField<OpportunityStage>(
-              value: _selectedStage,
-              decoration: const InputDecoration(
-                labelText: 'Stage',
-                prefixIcon: Icon(Icons.timeline),
-              ),
-              items: OpportunityStage.values.map((stage) {
-                return DropdownMenuItem(
-                  value: stage,
-                  child: Text(_getStageLabel(stage)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedStage = value;
-                    // Auto-update probability based on stage
-                    _probabilityController.text = _getStageProbability(value).toString();
-                  });
-                }
-              },
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<OpportunityType>(
-                    value: _selectedType,
-                    decoration: const InputDecoration(
-                      labelText: 'Tipe',
-                      prefixIcon: Icon(Icons.category),
-                    ),
-                    items: OpportunityType.values.map((type) {
-                      return DropdownMenuItem(
-                        value: type,
-                        child: Text(_getTypeLabel(type)),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          _selectedType = value;
-                        });
-                      }
-                    },
-                  ),
+            style: AppTheme.bodyMedium,
+            dropdownColor: AppTheme.surfaceDark,
+            iconEnabledColor: AppTheme.textSecondary,
+            iconDisabledColor: AppTheme.textTertiary,
+            items: OpportunityStage.values.map((stage) {
+              return DropdownMenuItem(
+                value: stage,
+                child: Text(
+                  _getStageLabel(stage),
+                  style: AppTheme.bodyMedium,
                 ),
-                SizedBox(width: AppTheme.spacingL),
-                Expanded(
-                  child: DropdownButtonFormField<OpportunityPriority>(
-                    value: _selectedPriority,
-                    decoration: const InputDecoration(
-                      labelText: 'Prioritas',
-                      prefixIcon: Icon(Icons.priority_high),
-                    ),
-                    items: OpportunityPriority.values.map((priority) {
-                      return DropdownMenuItem(
-                        value: priority,
-                        child: Text(_getPriorityLabel(priority)),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          _selectedPriority = value;
-                        });
-                      }
-                    },
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _selectedStage = value;
+                  _probabilityController.text = _getStageProbability(value).toString();
+                });
+              }
+            },
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<OpportunityType>(
+                  value: _selectedType,
+                  isExpanded: true,
+              decoration: AppTheme.inputDecoration('Tipe').copyWith(
+                    prefixIcon: Icon(Icons.category, color: AppTheme.textSecondary),
                   ),
+                  style: AppTheme.bodyMedium,
+                  dropdownColor: AppTheme.surfaceDark,
+                  iconEnabledColor: AppTheme.textSecondary,
+                  iconDisabledColor: AppTheme.textTertiary,
+                  items: OpportunityType.values.map((type) {
+                    return DropdownMenuItem(
+                      value: type,
+                      child: Text(
+                        _getTypeLabel(type),
+                        style: AppTheme.bodyMedium,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedType = value;
+                      });
+                    }
+                  },
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+              SizedBox(width: AppTheme.spacingL),
+              Expanded(
+                child: DropdownButtonFormField<OpportunityPriority>(
+                  value: _selectedPriority,
+                  isExpanded: true,
+              decoration: AppTheme.inputDecoration('Prioritas').copyWith(
+                    prefixIcon: Icon(Icons.priority_high, color: AppTheme.textSecondary),
+                  ),
+                  style: AppTheme.bodyMedium,
+                  dropdownColor: AppTheme.surfaceDark,
+                  iconEnabledColor: AppTheme.textSecondary,
+                  iconDisabledColor: AppTheme.textTertiary,
+                  items: OpportunityPriority.values.map((priority) {
+                    return DropdownMenuItem(
+                      value: priority,
+                      child: Text(
+                        _getPriorityLabel(priority),
+                        style: AppTheme.bodyMedium,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedPriority = value;
+                      });
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildDetailsSection() {
-    return Container(
-      decoration: AppTheme.surfaceDecoration,
-      margin: EdgeInsets.only(bottom: AppTheme.spacingM),
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Detail Tambahan',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _productsController,
-              decoration: const InputDecoration(
-                labelText: 'Produk/Layanan',
-                hintText: 'Pisahkan dengan koma',
-                prefixIcon: Icon(Icons.inventory),
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _competitorsController,
-              decoration: const InputDecoration(
-                labelText: 'Kompetitor',
-                hintText: 'Pisahkan dengan koma',
-                prefixIcon: Icon(Icons.compare_arrows),
-              ),
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Detail Tambahan',
+      child: Column(
+        children: [
+          CommonWidgets.buildTextField(
+            label: 'Produk/Layanan',
+            hint: 'Pisahkan dengan koma',
+            controller: _productsController,
+            prefixIcon: Icons.inventory,
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          CommonWidgets.buildTextField(
+            label: 'Kompetitor',
+            hint: 'Pisahkan dengan koma',
+            controller: _competitorsController,
+            prefixIcon: Icons.compare_arrows,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildRelationshipsSection() {
-    return Container(
-      decoration: AppTheme.surfaceDecoration,
-      margin: EdgeInsets.only(bottom: AppTheme.spacingM),
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Relasi',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _customerIdController,
-              decoration: const InputDecoration(
-                labelText: 'Customer ID',
-                hintText: 'ID customer terkait',
-                prefixIcon: Icon(Icons.person),
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _contactIdController,
-              decoration: const InputDecoration(
-                labelText: 'Contact ID',
-                hintText: 'ID kontak utama',
-                prefixIcon: Icon(Icons.contact_phone),
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _stakeholdersController,
-              decoration: const InputDecoration(
-                labelText: 'Stakeholders',
-                hintText: 'ID stakeholders, pisahkan dengan koma',
-                prefixIcon: Icon(Icons.group),
-              ),
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Relasi',
+      child: Column(
+        children: [
+          CommonWidgets.buildTextField(
+            label: 'Customer ID',
+            hint: 'ID customer terkait',
+            controller: _customerIdController,
+            prefixIcon: Icons.person,
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          CommonWidgets.buildTextField(
+            label: 'Contact ID',
+            hint: 'ID kontak utama',
+            controller: _contactIdController,
+            prefixIcon: Icons.contact_phone,
+          ),
+          SizedBox(height: AppTheme.spacingL),
+          CommonWidgets.buildTextField(
+            label: 'Stakeholders',
+            hint: 'ID stakeholders, pisahkan dengan koma',
+            controller: _stakeholdersController,
+            prefixIcon: Icons.group,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildNotesSection() {
-    return Container(
-      decoration: AppTheme.surfaceDecoration,
-      margin: EdgeInsets.only(bottom: AppTheme.spacingM),
-      child: Padding(
-        padding: EdgeInsets.all(AppTheme.spacingL),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Catatan',
-              style: AppTheme.heading4.copyWith(
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            SizedBox(height: AppTheme.spacingL),
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Catatan',
-                hintText: 'Catatan tambahan tentang opportunity',
-                prefixIcon: Icon(Icons.note),
-              ),
-              maxLines: 4,
-            ),
-          ],
-        ),
+    return CommonWidgets.buildSectionCard(
+      title: 'Catatan',
+      child: CommonWidgets.buildTextField(
+        label: 'Catatan',
+        hint: 'Catatan tambahan tentang opportunity',
+        controller: _notesController,
+        prefixIcon: Icons.note,
+        maxLines: 4,
       ),
     );
   }

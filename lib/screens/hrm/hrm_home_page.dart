@@ -435,10 +435,10 @@ class _HRMHomePageState extends State<HRMHomePage> {
                   
                   const SizedBox(height: AppTheme.spacingXL),
                   
-                  // Task Management Section
+                  // Task Section
                   _buildSection(
                     context,
-                    title: 'Manajemen Tugas',
+                    title: 'Tugas',
                     themeProvider: themeProvider,
                     children: [
                       Row(
@@ -447,8 +447,8 @@ class _HRMHomePageState extends State<HRMHomePage> {
                             child: _buildHRMCard(
                               context,
                               icon: Icons.task_alt,
-                              title: 'Tugas Saya',
-                              subtitle: 'Lihat tugas yang diberikan',
+                              title: 'Tugas',
+                              subtitle: 'Lihat semua tugas',
                               color: AppTheme.accentBlue,
                               themeProvider: themeProvider,
                               onTap: () => Navigator.push(

@@ -23,7 +23,7 @@ class _ShipmentFormPageState extends State<ShipmentFormPage> {
   String _status = 'pending';
   bool _isLoading = false;
 
-  final List<String> _statusOptions = ['pending', 'in_transit', 'delivered', 'cancelled'];
+  final List<String> _statusOptions = ['pending', 'inTransit', 'delivered', 'cancelled'];
 
   @override
   void initState() {

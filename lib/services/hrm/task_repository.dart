@@ -120,7 +120,18 @@ class TaskRepository {
         .where('assigneeId', isEqualTo: employeeId)
         .orderBy('dueDate')
         .snapshots()
-        .map((s) => s.docs.map((d) => TaskModel.fromDoc(d)).toList());
+        .map((s) {
+          try {
+            return s.docs.map((d) => TaskModel.fromDoc(d)).toList();
+          } catch (e) {
+            print('Error parsing tasks for employee $employeeId: $e');
+            return <TaskModel>[];
+          }
+        })
+        .handleError((error) {
+          print('Error watching tasks for employee $employeeId: $error');
+          return <TaskModel>[];
+        });
   }
 
   /// Watch tasks created by a specific reporter
@@ -138,6 +149,94 @@ class TaskRepository {
         .orderBy('dueDate')
         .snapshots()
         .map((s) => s.docs.map((d) => TaskModel.fromDoc(d)).toList());
+  }
+
+  /// Watch all tasks with filters
+  Stream<List<TaskModel>> watchAllWithFilters({
+    String? assigneeId,
+    String? reporterId,
+    TaskStatus? status,
+    TaskPriority? priority,
+    bool? isOverdue,
+    String orderBy = 'dueDate',
+    bool descending = false,
+  }) {
+    try {
+      Query query = _col;
+
+      // Apply filters
+      if (assigneeId != null && assigneeId.isNotEmpty) {
+        query = query.where('assigneeId', isEqualTo: assigneeId);
+      }
+      if (reporterId != null && reporterId.isNotEmpty) {
+        query = query.where('reporterId', isEqualTo: reporterId);
+      }
+      if (status != null) {
+        query = query.where('status', isEqualTo: status.name);
+      }
+      if (priority != null) {
+        query = query.where('priority', isEqualTo: priority.name);
+      }
+
+      // Check if we have multiple filters that might cause index issues
+      bool hasMultipleFilters = [assigneeId, reporterId, status?.name, priority?.name]
+          .where((filter) => filter != null && filter.isNotEmpty)
+          .length > 1;
+
+      // Apply ordering only if we don't have multiple filters or complex sorting
+      if (!hasMultipleFilters && ['dueDate', 'createdAt'].contains(orderBy)) {
+        query = query.orderBy(orderBy, descending: descending);
+      }
+
+      return query.snapshots().map((snapshot) {
+        try {
+          var tasks = snapshot.docs.map((doc) => TaskModel.fromDoc(doc)).toList();
+
+          // Apply overdue filter if needed (client-side)
+          if (isOverdue == true) {
+            final now = DateTime.now();
+            tasks = tasks.where((task) => 
+              task.dueDate.isBefore(now) && task.status != TaskStatus.completed
+            ).toList();
+          }
+
+          // Apply client-side sorting if not handled by Firestore
+          if (hasMultipleFilters || !['dueDate', 'createdAt'].contains(orderBy)) {
+            tasks.sort((a, b) {
+              int comparison = 0;
+              switch (orderBy) {
+                case 'dueDate':
+                  comparison = a.dueDate.compareTo(b.dueDate);
+                  break;
+                case 'priority':
+                  comparison = a.priority.index.compareTo(b.priority.index);
+                  break;
+                case 'createdAt':
+                  comparison = a.createdAt.compareTo(b.createdAt);
+                  break;
+                case 'title':
+                  comparison = a.title.compareTo(b.title);
+                  break;
+                default:
+                  comparison = a.dueDate.compareTo(b.dueDate);
+              }
+              return descending ? -comparison : comparison;
+            });
+          }
+
+          return tasks;
+        } catch (e) {
+          print('Error parsing filtered tasks: $e');
+          return <TaskModel>[];
+        }
+      }).handleError((error) {
+        print('Error in watchAllWithFilters: $error');
+        return <TaskModel>[];
+      });
+    } catch (e) {
+      print('Error setting up watchAllWithFilters query: $e');
+      return Stream.value(<TaskModel>[]);
+    }
   }
 
   /// Watch tasks by status
@@ -166,6 +265,58 @@ class TaskRepository {
         .orderBy('dueDate')
         .snapshots()
         .map((s) => s.docs.map((d) => TaskModel.fromDoc(d)).toList());
+  }
+
+  /// Get all unique assignees from tasks
+  Future<List<EmployeeModel>> getAllTaskAssignees() async {
+    try {
+      final tasksSnapshot = await _col.get();
+      final assigneeIds = <String>{};
+      
+      for (final doc in tasksSnapshot.docs) {
+        final task = TaskModel.fromDoc(doc);
+        assigneeIds.add(task.assigneeId);
+      }
+      
+      final assignees = <EmployeeModel>[];
+      for (final assigneeId in assigneeIds) {
+        final employee = await _employeeRepository.getById(assigneeId);
+        if (employee != null) {
+          assignees.add(employee);
+        }
+      }
+      
+      return assignees;
+    } catch (e) {
+      print('Error getting task assignees: $e');
+      return [];
+    }
+  }
+
+  /// Get all unique reporters from tasks
+  Future<List<EmployeeModel>> getAllTaskReporters() async {
+    try {
+      final tasksSnapshot = await _col.get();
+      final reporterIds = <String>{};
+      
+      for (final doc in tasksSnapshot.docs) {
+        final task = TaskModel.fromDoc(doc);
+        reporterIds.add(task.reporterId);
+      }
+      
+      final reporters = <EmployeeModel>[];
+      for (final reporterId in reporterIds) {
+        final employee = await _employeeRepository.getById(reporterId);
+        if (employee != null) {
+          reporters.add(employee);
+        }
+      }
+      
+      return reporters;
+    } catch (e) {
+      print('Error getting task reporters: $e');
+      return [];
+    }
   }
 
   /// Get task statistics for an employee

@@ -497,7 +497,7 @@ class _TaskDashboardPageState extends State<TaskDashboardPage> {
                       );
                     },
                     icon: const Icon(Icons.list),
-                    label: const Text('Lihat Semua Tugas'),
+                    label: const Text('Lihat Tugas'),
                   ),
                 ),
               ],

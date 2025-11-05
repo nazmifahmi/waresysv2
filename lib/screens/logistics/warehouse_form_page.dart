@@ -17,6 +17,8 @@ class _WarehouseFormPageState extends State<WarehouseFormPage> {
   final _locationController = TextEditingController();
   final _stockCountController = TextEditingController();
   final _capacityController = TextEditingController();
+  final _volumeController = TextEditingController();
+  String _volumeUnit = 'm3';
   final WarehouseRepository _repository = WarehouseRepository();
   
   bool _isLoading = false;
@@ -30,6 +32,8 @@ class _WarehouseFormPageState extends State<WarehouseFormPage> {
       _locationController.text = warehouse.location;
       _stockCountController.text = warehouse.stockCount.toString();
       _capacityController.text = warehouse.capacity.toString();
+      _volumeController.text = warehouse.volume.toString();
+      _volumeUnit = warehouse.volumeUnit;
     }
   }
 
@@ -45,6 +49,8 @@ class _WarehouseFormPageState extends State<WarehouseFormPage> {
         location: _locationController.text.trim(),
         stockCount: int.parse(_stockCountController.text.trim()),
         capacity: int.parse(_capacityController.text.trim()),
+        volume: double.tryParse(_volumeController.text.trim()) ?? 0.0,
+        volumeUnit: _volumeUnit,
       );
 
       if (widget.existing != null) {
@@ -114,6 +120,37 @@ class _WarehouseFormPageState extends State<WarehouseFormPage> {
             ),
             const SizedBox(height: 16),
             TextFormField(
+              controller: _volumeController,
+              decoration: const InputDecoration(
+                labelText: 'Volume Gudang',
+                hintText: 'contoh: 120.5',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              validator: (value) {
+                if ((value ?? '').trim().isEmpty) return null; // optional
+                final vol = double.tryParse(value!.trim());
+                if (vol == null || vol < 0) {
+                  return 'Volume harus berupa angka >= 0';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _volumeUnit,
+              decoration: const InputDecoration(
+                labelText: 'Satuan Volume',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'm3', child: Text('m³')),
+                DropdownMenuItem(value: 'ft3', child: Text('ft³')),
+              ],
+              onChanged: (val) => setState(() => _volumeUnit = val ?? 'm3'),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
               controller: _stockCountController,
               decoration: const InputDecoration(
                 labelText: 'Jumlah Stok Saat Ini',
@@ -176,6 +213,7 @@ class _WarehouseFormPageState extends State<WarehouseFormPage> {
     _locationController.dispose();
     _stockCountController.dispose();
     _capacityController.dispose();
+    _volumeController.dispose();
     super.dispose();
   }
 }
