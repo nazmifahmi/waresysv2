@@ -134,35 +134,40 @@ class _SplashScreenState extends State<SplashScreen> {
         firebaseInitialized = true;
         debugPrint('✅ Firebase initialized successfully');
 
-        // Inisialisasi FirestoreConnectionService setelah Firebase berhasil
-        try {
-          await FirestoreConnectionService().initialize()
-              .timeout(const Duration(seconds: 10));
-          debugPrint('✅ FirestoreConnectionService initialized successfully');
-        } catch (e) {
-          debugPrint('⚠️ FirestoreConnectionService initialization failed: $e');
-        }
+        // Inisialisasi layanan sekunder di background agar tidak memblokir UI
+        Future.microtask(() async {
+          try {
+            await FirestoreConnectionService().initialize()
+                .timeout(const Duration(seconds: 5));
+            debugPrint('✅ FirestoreConnectionService initialized successfully');
+          } catch (e) {
+            debugPrint('⚠️ FirestoreConnectionService initialization failed: $e');
+          }
+        });
 
-        // Inisialisasi Firebase Messaging untuk push notifications
-        try {
-          await FirebaseMessagingHandler.initialize()
-              .timeout(const Duration(seconds: 10));
-          debugPrint('✅ Firebase Messaging initialized successfully');
-        } catch (e) {
-          debugPrint('⚠️ Firebase Messaging initialization failed: $e');
-        }
+        Future.microtask(() async {
+          try {
+            await FirebaseMessagingHandler.initialize()
+                .timeout(const Duration(seconds: 5));
+            debugPrint('✅ Firebase Messaging initialized successfully');
+          } catch (e) {
+            debugPrint('⚠️ Firebase Messaging initialization failed: $e');
+          }
+        });
       } catch (e) {
         debugPrint('⚠️ Firebase initialization failed: $e');
         debugPrint('📱 Continuing with offline mode...');
       }
       
-      // Panggil inisialisasi AI dari AIProvider dengan timeout
-      try {
-        await provider.Provider.of<AIProvider>(context, listen: false).initialize()
-            .timeout(const Duration(seconds: 15));
-      } catch (e) {
-        debugPrint('⚠️ AI initialization failed: $e');
-      }
+      // Inisialisasi AI di background agar tidak memblokir navigasi awal
+      final aiProvider = provider.Provider.of<AIProvider>(context, listen: false);
+      Future.microtask(() async {
+        try {
+          await aiProvider.initialize().timeout(const Duration(seconds: 10));
+        } catch (e) {
+          debugPrint('⚠️ AI initialization failed: $e');
+        }
+      });
       
       // Run user role migration (one-time operation)
       try {
